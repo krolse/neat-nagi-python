@@ -67,11 +67,7 @@ class SpikingNeuron(object):
             self.membrane_recovery += self.d
 
     def reset(self):
-        """
-        Resets all state variables.
-
-        :return: void
-        """
+        """ Resets all state variables."""
 
         self.membrane_potential = self.c
         self.membrane_recovery = self.b * self.membrane_potential
@@ -96,3 +92,41 @@ class SpikingNeuralNetwork(object):
         self.outputs = outputs
         self.input_values = {}
 
+    def set_inputs(self, inputs):
+        """
+        Assigns voltages to the input nodes.
+
+        :param list(float) inputs: List of voltage values."""
+
+        assert len(inputs) == len(self.inputs), f"Number of inputs {len(inputs)} does not match number of input nodes {len(self.inputs)} "
+
+        for key, voltage in zip(self.inputs, inputs):
+            self.input_values[key] = voltage
+
+    def advance(self, dt):
+        """
+        Advances the neural network with the given input values and neuron states. Iterates through each neuron, then
+        through each input of each neuron and evaluates the values to advance the network. The values can come from
+        either input nodes, or firing neurons in a previous layer.
+
+        :param float dt: Time step in miliseconds.
+        :return list(float): List of the output values of the network after advance."""
+
+        for neuron in self.neurons.values():
+            neuron.current = neuron.bias
+            for key, weight in neuron.inputs:
+                in_neuron = self.neurons.get(key)
+                if in_neuron is not None:
+                    in_value = in_neuron.fired
+                else:
+                    in_value = self.input_values[key]
+
+                neuron.current += in_value * weight
+                neuron.advance(dt)
+
+        return [self.neurons[key].fired for key in self.outputs]
+
+    def reset(self):
+        """Resets all state variables in all neurons in the entire neural network."""
+        for neuron in self.neurons.values():
+            neuron.reset()
