@@ -1,33 +1,21 @@
 from math import exp
-
-TIME_STEP_IN_MSEC = 0.05
-MEMBRANE_POTENTIAL_THRESHOLD = 30.0
-
-REGULAR_SPIKING_PARAMS = {'a': 0.02, 'b': 0.20, 'c': -65.0, 'd': 8.00}
-INTRINSICALLY_BURSTING_PARAMS = {'a': 0.02, 'b': 0.20, 'c': -55.0, 'd': 4.00}
-CHATTERING_PARAMS = {'a': 0.02, 'b': 0.20, 'c': -50.0, 'd': 2.00}
-FAST_SPIKING_PARAMS = {'a': 0.10, 'b': 0.20, 'c': -65.0, 'd': 2.00}
-THALAMO_CORTICAL_PARAMS = {'a': 0.02, 'b': 0.25, 'c': -65.0, 'd': 0.05}
-RESONATOR_PARAMS = {'a': 0.10, 'b': 0.25, 'c': -65.0, 'd': 2.00}
-LOW_THRESHOLD_SPIKING_PARAMS = {'a': 0.02, 'b': 0.25, 'c': -65.0, 'd': 2.00}
-
-EXPONENTIAL_STDP_PARAMETERS = {'A+': 1, 'A-': 1, 'tau+': 10, 'tau-': 10, 'sigma': 0.1, 'wmax': 1.5, 'wmin': -1.5}
-
+from typing import List, Dict
+from nagi.constants import *
 
 
 class SpikingNeuron(object):
     """Class representing a single spiking neuron."""
 
-    def __init__(self, bias, a, b, c, d, inputs):
+    def __init__(self, bias: float, a: float, b: float, c: float, d: float, inputs: Dict[int, float]):
         """
         a, b, c, and d are the parameters of the Izhikevich model.
 
-        :param float bias: The bias of the neuron.
-        :param float a: The time-scale of the recovery variable.
-        :param float b: The sensitivity of the recovery variable.
-        :param float c: The after-spike reset value of the membrane potential.
-        :param float d: The after-spike reset value of the recovery variable.
-        :param list(tuple(int, float)) inputs: A list of (input key, weight) pairs for incoming connections.
+        :param bias: The bias of the neuron.
+        :param a: The time-scale of the recovery variable.
+        :param b: The sensitivity of the recovery variable.
+        :param c: The after-spike reset value of the membrane potential.
+        :param d: The after-spike reset value of the recovery variable.
+        :param inputs: A dictionary of incoming connection weights.
         """
 
         self.bias = bias
@@ -43,7 +31,7 @@ class SpikingNeuron(object):
         self.fired = 0
         self.current = self.bias
 
-    def advance(self, dt):
+    def advance(self, dt: float):
         """
         Advances simulation time by the given time step in milliseconds.
 
@@ -55,8 +43,7 @@ class SpikingNeuron(object):
             v = c
             u = u + d
 
-        :param float dt: Time step in miliseconds
-        :return: void
+        :param dt: Time step in milliseconds.
         """
 
         v = self.membrane_potential
@@ -80,20 +67,23 @@ class SpikingNeuron(object):
         self.fired = 0
         self.current = self.bias
 
-    def stpd_update(self, key, dt):
+    def stpd_update(self, key: int, dt: float):
         """
-        :param dt:
+        Applies STDP to the weight with the supplied key, dependent on the value of dt.
+
+        :param dt: Difference in the relative timing of pre- and postsynaptic spikes.
         :param key: The key identifying the synapse weight to be updated.
         :return: void
         """
 
-        params = EXPONENTIAL_STDP_PARAMETERS
-
-        def exp_synaptic_weight_modification(dt):
+        # noinspection PyShadowingNames
+        def exp_synaptic_weight_modification(dt: float, params: Dict[str, float]) -> float:
             """
             Exponential Synaptic Weight Modification function used in STDP based learning.
+
             :param dt: Difference in the relative timing of pre- and postsynaptic spikes.
-            :return float: Weight modification in percentage
+            :param params: Dictionary containing hyperparameters for STDP.
+            :return: Weight modification in decimal percentage.
             """
 
             if dt > 0:
@@ -101,53 +91,55 @@ class SpikingNeuron(object):
             else:
                 return params['A-'] * exp(dt / params['tau-'])
 
-        dw = exp_synaptic_weight_modification(dt)
+        params = EXPONENTIAL_STDP_PARAMETERS
+        weight = self.inputs[key]
+        delta_weight = exp_synaptic_weight_modification(dt, params)
 
-        if dw > 0:
-            self.inputs[key] += params['sigma'] * dw * (self.inputs[key]-abs(params['wmin']))
-        elif dw < 0:
-            self.input[key] += params['sigma'] * dw * (params['w_max' - self.inputs[key]])
+        if delta_weight > 0:
+            self.inputs[key] += params['sigma'] * delta_weight * (weight - abs(params['w_min']))
+        elif delta_weight < 0:
+            self.inputs[key] += params['sigma'] * delta_weight * (params['w_max'] - weight)
 
 
 class SpikingNeuralNetwork(object):
     """Class representing a spiking neural network."""
 
-    def __init__(self, neurons, inputs, outputs):
+    def __init__(self, neurons: Dict[int, SpikingNeuron], inputs: List[int], outputs: List[int]):
         """
-        :param dict(int, SpikingNeuron) neurons: Dictionary containing key/node pairs.
-        :param list(int) inputs: List of input node keys.
-        :param list(int) outputs: List of output node keys.
-        :var dict(int, float) self.input_values: Dictionary containing input key/voltage pairs.
+        :param neurons: Dictionary containing key/node pairs.
+        :param inputs: List of input node keys.
+        :param outputs: List of output node keys.
+        :var self.input_values: Dictionary containing input key/voltage pairs.
         """
 
         self.neurons = neurons
         self.inputs = inputs
         self.outputs = outputs
-        self.input_values = {}
+        self.input_values: Dict[int, float] = {}
 
-    def set_inputs(self, inputs):
+    def set_inputs(self, inputs: List[float]):
         """
         Assigns voltages to the input nodes.
 
-        :param list(float) inputs: List of voltage values."""
+        :param inputs: List of voltage values."""
 
         assert len(inputs) == len(self.inputs), f"Number of inputs {len(inputs)} does not match number of input nodes {len(self.inputs)} "
 
         for key, voltage in zip(self.inputs, inputs):
             self.input_values[key] = voltage
 
-    def advance(self, dt):
+    def advance(self, dt: float) -> List[float]:
         """
         Advances the neural network with the given input values and neuron states. Iterates through each neuron, then
         through each input of each neuron and evaluates the values to advance the network. The values can come from
         either input nodes, or firing neurons in a previous layer.
 
         :param float dt: Time step in miliseconds.
-        :return list(float): List of the output values of the network after advance."""
+        :return: List of the output values of the network after advance."""
 
         for neuron in self.neurons.values():
             neuron.current = neuron.bias
-            for key, weight in neuron.inputs:
+            for key, weight in neuron.inputs.values():
                 in_neuron = self.neurons.get(key)
                 if in_neuron is not None:
                     in_value = in_neuron.fired
