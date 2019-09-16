@@ -46,6 +46,7 @@ class SpikingNeuron(object):
         :param dt: Time step in milliseconds.
         """
 
+        # TODO: Graphs are not looking right. Have another look at the neat-python implementation.
         v = self.membrane_potential
         u = self.membrane_recovery
 
@@ -77,28 +78,32 @@ class SpikingNeuron(object):
         """
 
         # noinspection PyShadowingNames
-        def exp_synaptic_weight_modification(dt: float, params: Dict[str, float]) -> float:
+        def exp_synaptic_weight_modification(dt: float, a_plus: float, a_minus: float, tau_plus: float, tau_minus: float, *args) -> float:
             """
             Exponential Synaptic Weight Modification function used in STDP based learning.
 
-            :param dt: Difference in the relative timing of pre- and postsynaptic spikes.
-            :param params: Dictionary containing hyperparameters for STDP.
+            :param dt: Difference in relative timing of pre- and postsynaptic spikes, in milliseconds.
+            :param a_plus:
+            :param a_minus:
+            :param tau_plus:
+            :param tau_minus:
             :return: Weight modification in decimal percentage.
             """
 
             if dt > 0:
-                return -params['A+'] * exp(-dt / params['tau+'])
+                return -a_plus * exp(-dt / tau_plus)
             else:
-                return params['A-'] * exp(dt / params['tau-'])
+                return a_minus * exp(dt / tau_minus)
 
-        params = EXPONENTIAL_STDP_PARAMETERS
+        p = EXPONENTIAL_STDP_PARAMETERS
         weight = self.inputs[key]
-        delta_weight = exp_synaptic_weight_modification(dt, params)
+        delta_weight = exp_synaptic_weight_modification(dt, p['a_plus'], p['a_minus'], p['tau_plus'], p['tau_minus'])
+        sigma, w_min, w_max = p['sigma'], p['w_min'], p['w_max']
 
         if delta_weight > 0:
-            self.inputs[key] += params['sigma'] * delta_weight * (weight - abs(params['w_min']))
+            self.inputs[key] += sigma * delta_weight * (weight - abs(w_min))
         elif delta_weight < 0:
-            self.inputs[key] += params['sigma'] * delta_weight * (params['w_max'] - weight)
+            self.inputs[key] += sigma * delta_weight * (w_max - weight)
 
 
 class SpikingNeuralNetwork(object):
