@@ -1,3 +1,5 @@
+from math import exp
+
 TIME_STEP_IN_MSEC = 0.05
 MEMBRANE_POTENTIAL_THRESHOLD = 30.0
 
@@ -8,6 +10,9 @@ FAST_SPIKING_PARAMS = {'a': 0.10, 'b': 0.20, 'c': -65.0, 'd': 2.00}
 THALAMO_CORTICAL_PARAMS = {'a': 0.02, 'b': 0.25, 'c': -65.0, 'd': 0.05}
 RESONATOR_PARAMS = {'a': 0.10, 'b': 0.25, 'c': -65.0, 'd': 2.00}
 LOW_THRESHOLD_SPIKING_PARAMS = {'a': 0.02, 'b': 0.25, 'c': -65.0, 'd': 2.00}
+
+EXPONENTIAL_STDP_PARAMETERS = {'A+': 1, 'A-': 1, 'tau+': 10, 'tau-': 10, 'sigma': 0.1, 'wmax': 1.5, 'wmin': -1.5}
+
 
 
 class SpikingNeuron(object):
@@ -74,6 +79,34 @@ class SpikingNeuron(object):
 
         self.fired = 0
         self.current = self.bias
+
+    def stpd_update(self, key, dt):
+        """
+        :param dt:
+        :param key: The key identifying the synapse weight to be updated.
+        :return: void
+        """
+
+        params = EXPONENTIAL_STDP_PARAMETERS
+
+        def exp_synaptic_weight_modification(dt):
+            """
+            Exponential Synaptic Weight Modification function used in STDP based learning.
+            :param dt: Difference in the relative timing of pre- and postsynaptic spikes.
+            :return float: Weight modification in percentage
+            """
+
+            if dt > 0:
+                return -params['A+'] * exp(-dt / params['tau+'])
+            else:
+                return params['A-'] * exp(dt / params['tau-'])
+
+        dw = exp_synaptic_weight_modification(dt)
+
+        if dw > 0:
+            self.inputs[key] += params['sigma'] * dw * (self.inputs[key]-abs(params['wmin']))
+        elif dw < 0:
+            self.input[key] += params['sigma'] * dw * (params['w_max' - self.inputs[key]])
 
 
 class SpikingNeuralNetwork(object):
