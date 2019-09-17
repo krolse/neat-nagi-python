@@ -46,7 +46,6 @@ class SpikingNeuron(object):
         :param dt: Time step in milliseconds.
         """
 
-        # TODO: Graphs are not looking right. Have another look at the neat-python implementation.
         v = self.membrane_potential
         u = self.membrane_recovery
 
