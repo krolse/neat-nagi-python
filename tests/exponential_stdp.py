@@ -17,8 +17,8 @@ x = [i for i in range(-40, 41)]
 y = [exp_synaptic_weight_modification(dt, p['a_plus'], p['a_minus'], p['tau_plus'], p['tau_minus']) for dt in range(-40, 41)]
 
 fig = plt.figure()
-plt.ylabel("Change in synapse strength.")
-plt.xlabel("Delta_t (in ms)")
+plt.ylabel("delta_w")
+plt.xlabel("delta_t (in ms)")
 plt.grid()
 plt.gca().yaxis.set_major_formatter(PercentFormatter(1))
 plt.plot(x, y, "r-")
