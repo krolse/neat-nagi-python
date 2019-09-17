@@ -1,6 +1,6 @@
-from math import exp
 from typing import List, Dict
 from nagi.constants import *
+from nagi.stdp import *
 
 
 class SpikingNeuron(object):
@@ -76,27 +76,11 @@ class SpikingNeuron(object):
         :return: void
         """
 
-        # noinspection PyShadowingNames
-        def exp_synaptic_weight_modification(dt: float, a_plus: float, a_minus: float, tau_plus: float, tau_minus: float, *args) -> float:
-            """
-            Exponential Synaptic Weight Modification function used in STDP based learning.
-
-            :param dt: Difference in relative timing of pre- and postsynaptic spikes, in milliseconds.
-            :param a_plus:
-            :param a_minus:
-            :param tau_plus:
-            :param tau_minus:
-            :return: Weight modification in decimal percentage.
-            """
-
-            if dt > 0:
-                return -a_plus * exp(-dt / tau_plus)
-            else:
-                return a_minus * exp(dt / tau_minus)
-
         p = EXPONENTIAL_STDP_PARAMETERS
         weight = self.inputs[key]
-        delta_weight = exp_synaptic_weight_modification(dt, p['a_plus'], p['a_minus'], p['tau_plus'], p['tau_minus'])
+
+        # TODO: Make learning rule dynamic. Part of genome?
+        delta_weight = asymmetric_anti_hebbian(dt, p['a_plus'], p['a_minus'], p['tau_plus'], p['tau_minus'])
         sigma, w_min, w_max = p['sigma'], p['w_min'], p['w_max']
 
         if delta_weight > 0:
