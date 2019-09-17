@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from nagi import snn
+from nagi import snn, constants
 
 
 def plot_spikes(spikes, title):
@@ -49,7 +49,7 @@ def plot_spikes(spikes, title):
 
 
 def show(title, a, b, c, d):
-    n = snn.SpikingNeuron(0.0, a, b, c, d, [])
+    n = snn.SpikingNeuron(0.0, a, b, c, d, {})
     spike_train = []
     for i in range(1000):
         n.current = 0.0 if i < 100 or i > 800 else 10.0
@@ -60,18 +60,18 @@ def show(title, a, b, c, d):
     plot_spikes(spike_train, title)
 
 
-show('regular spiking', **snn.REGULAR_SPIKING_PARAMS)
+show('regular spiking', **constants.REGULAR_SPIKING_PARAMS)
 
-show('intrinsically bursting', **snn.INTRINSICALLY_BURSTING_PARAMS)
+show('intrinsically bursting', **constants.INTRINSICALLY_BURSTING_PARAMS)
 
-show('chattering', **snn.CHATTERING_PARAMS)
+show('chattering', **constants.CHATTERING_PARAMS)
 
-show('fast spiking', **snn.FAST_SPIKING_PARAMS)
+show('fast spiking', **constants.FAST_SPIKING_PARAMS)
 
-show('low-threshold spiking', **snn.LOW_THRESHOLD_SPIKING_PARAMS)
+show('low-threshold spiking', **constants.LOW_THRESHOLD_SPIKING_PARAMS)
 
-show('thalamo-cortical', **snn.THALAMO_CORTICAL_PARAMS)
+show('thalamo-cortical', **constants.THALAMO_CORTICAL_PARAMS)
 
-show('resonator', 0.1, 0.26, -65.0, 2.0)
+show('resonator', **constants.RESONATOR_PARAMS)
 
 plt.show()
