@@ -60,18 +60,13 @@ def show(title, a, b, c, d):
     plot_spikes(spike_train, title)
 
 
-show('regular spiking', **constants.REGULAR_SPIKING_PARAMS)
+if __name__ == '__main__':
+    show('regular spiking', **constants.REGULAR_SPIKING_PARAMS)
+    show('intrinsically bursting', **constants.INTRINSICALLY_BURSTING_PARAMS)
+    show('chattering', **constants.CHATTERING_PARAMS)
+    show('fast spiking', **constants.FAST_SPIKING_PARAMS)
+    show('low-threshold spiking', **constants.LOW_THRESHOLD_SPIKING_PARAMS)
+    show('thalamo-cortical', **constants.THALAMO_CORTICAL_PARAMS)
+    show('resonator', **constants.RESONATOR_PARAMS)
 
-show('intrinsically bursting', **constants.INTRINSICALLY_BURSTING_PARAMS)
-
-show('chattering', **constants.CHATTERING_PARAMS)
-
-show('fast spiking', **constants.FAST_SPIKING_PARAMS)
-
-show('low-threshold spiking', **constants.LOW_THRESHOLD_SPIKING_PARAMS)
-
-show('thalamo-cortical', **constants.THALAMO_CORTICAL_PARAMS)
-
-show('resonator', **constants.RESONATOR_PARAMS)
-
-plt.show()
+    plt.show()

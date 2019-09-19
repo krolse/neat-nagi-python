@@ -20,5 +20,6 @@ def plot_stdp(f):
     plt.show()
 
 
-plot_stdp(asymmetric_hebbian)
-plot_stdp(asymmetric_anti_hebbian)
+if __name__ == '__main__':
+    plot_stdp(asymmetric_hebbian)
+    plot_stdp(asymmetric_anti_hebbian)
