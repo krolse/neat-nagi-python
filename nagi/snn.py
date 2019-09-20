@@ -55,7 +55,7 @@ class SpikingNeuron(object):
         self.fired = 0
         if self.membrane_potential > 30.0:
             self.fired = 1
-            self.membrane_potential = 0.0
+            self.membrane_potential = self.c
             self.membrane_recovery += self.d
 
     def reset(self):
