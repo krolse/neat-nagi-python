@@ -25,15 +25,14 @@ class SpikingNeuron(object):
         self.d = d
         self.inputs = inputs
 
+        self.membrane_potential = self.c
+        self.membrane_recovery = self.b * self.membrane_potential
+        self.fired = 0
+        self.current = self.bias
+
         # Dictionaries containing time elapsed since last input and output spikes.
         self.output_spike_timing: float = STDP_LEARNING_WINDOW + TIME_STEP_IN_MSEC
         self.input_spike_timings: Dict[int, float] = {key: STDP_LEARNING_WINDOW + TIME_STEP_IN_MSEC for key in self.inputs.keys()}
-
-        self.membrane_potential = self.c
-        self.membrane_recovery = self.b * self.membrane_potential
-
-        self.fired = 0
-        self.current = self.bias
 
     def advance(self, dt: float):
         """
