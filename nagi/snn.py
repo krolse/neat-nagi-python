@@ -1,5 +1,5 @@
 from typing import List, Dict
-from nagi.constants import MEMBRANE_POTENTIAL_THRESHOLD, ASYMMETRIC_HEBBIAN_PARAMS, STDP_PARAMS, STDP_LEARNING_WINDOW
+from nagi.constants import MEMBRANE_POTENTIAL_THRESHOLD, ASYMMETRIC_HEBBIAN_PARAMS, STDP_PARAMS, STDP_LEARNING_WINDOW, TIME_STEP_IN_MSEC
 from nagi.stdp import *
 
 
@@ -24,6 +24,12 @@ class SpikingNeuron(object):
         self.c = c
         self.d = d
         self.inputs = inputs
+
+        # Dictionaries containing time elapsed since last input and output spikes.
+        self.output_spike_timing = STDP_LEARNING_WINDOW + TIME_STEP_IN_MSEC
+        self.input_spike_timings = {}
+        for key in inputs.keys():
+            self.input_spike_timings[key] = STDP_LEARNING_WINDOW + TIME_STEP_IN_MSEC
 
         self.membrane_potential = self.c
         self.membrane_recovery = self.b * self.membrane_potential
@@ -53,10 +59,24 @@ class SpikingNeuron(object):
         self.membrane_recovery += dt * self.a * (self.b * v - u)
 
         self.fired = 0
+        self.output_spike_timing += dt
+
+        for key in self.input_spike_timings.keys():
+            # STDP update on received input spike.
+            if self.input_spike_timings[key] == 0:
+                self.stpd_update(key)
+
+            self.input_spike_timings[key] += dt
+
         if self.membrane_potential > MEMBRANE_POTENTIAL_THRESHOLD:
             self.fired = 1
+            self.output_spike_timing = 0
             self.membrane_potential = self.c
             self.membrane_recovery += self.d
+
+            # STDP on output spike.
+            for key in self.input_spike_timings.keys():
+                self.stpd_update(key)
 
     def reset(self):
         """ Resets all state variables."""
@@ -67,24 +87,29 @@ class SpikingNeuron(object):
         self.fired = 0
         self.current = self.bias
 
-    def stpd_update(self, key: int, delta_t: float):
-        """
-        Applies STDP to the weight with the supplied key, dependent on the value of dt.
+        self.output_spike_timing = STDP_LEARNING_WINDOW + TIME_STEP_IN_MSEC
+        for key in self.inputs.keys():
+            self.input_spike_timings[key] = STDP_LEARNING_WINDOW + TIME_STEP_IN_MSEC
 
-        :param delta_t: Difference in the relative timing of pre- and postsynaptic spikes.
+    def stpd_update(self, key: int):
+        """
+        Applies STDP to the weight with the supplied key.
+
         :param key: The key identifying the synapse weight to be updated.
         :return: void
         """
-
-        weight = self.inputs[key]
         # TODO: Make learning rule dynamic. Part of genome?
-        delta_weight = asymmetric_anti_hebbian(delta_t, **ASYMMETRIC_HEBBIAN_PARAMS)
-        sigma, w_min, w_max = STDP_PARAMS['sigma'], STDP_PARAMS['w_min'], STDP_PARAMS['w_max']
 
-        if delta_weight > 0:
-            self.inputs[key] += sigma * delta_weight * (weight - abs(w_min))
-        elif delta_weight < 0:
-            self.inputs[key] += sigma * delta_weight * (w_max - weight)
+        delta_t = self.input_spike_timings[key] - self.output_spike_timing
+        if abs(delta_t) <= STDP_LEARNING_WINDOW:
+            weight = self.inputs[key]
+            delta_weight = asymmetric_anti_hebbian(delta_t, **ASYMMETRIC_HEBBIAN_PARAMS)
+            sigma, w_min, w_max = STDP_PARAMS['sigma'], STDP_PARAMS['w_min'], STDP_PARAMS['w_max']
+
+            if delta_weight > 0:
+                self.inputs[key] += sigma * delta_weight * (weight - abs(w_min))
+            elif delta_weight < 0:
+                self.inputs[key] += sigma * delta_weight * (w_max - weight)
 
 
 class SpikingNeuralNetwork(object):
@@ -114,13 +139,13 @@ class SpikingNeuralNetwork(object):
         for key, voltage in zip(self.inputs, inputs):
             self.input_values[key] = voltage
 
-    def advance(self, delta_t: float) -> List[float]:
+    def advance(self, dt: float) -> List[float]:
         """
         Advances the neural network with the given input values and neuron states. Iterates through each neuron, then
         through each input of each neuron and evaluates the values to advance the network. The values can come from
         either input nodes, or firing neurons in a previous layer.
 
-        :param float delta_t: Time step in miliseconds.
+        :param float dt: Time step in miliseconds.
         :return: List of the output values of the network after advance."""
 
         for neuron in self.neurons.values():
@@ -129,11 +154,15 @@ class SpikingNeuralNetwork(object):
                 in_neuron = self.neurons.get(key)
                 if in_neuron is not None:
                     in_value = in_neuron.fired
+
+                    # Trigger STDP on received input spike.
+                    if in_neuron.fired:
+                        neuron.input_spike_timings[key] = 0
                 else:
                     in_value = self.input_values[key]
 
                 neuron.current += in_value * weight
-                neuron.advance(delta_t)
+                neuron.advance(dt)
 
         return [self.neurons[key].fired for key in self.outputs]
 
