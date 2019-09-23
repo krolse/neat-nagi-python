@@ -1,5 +1,5 @@
 from typing import List, Dict
-from nagi.constants import MEMBRANE_POTENTIAL_THRESHOLD, ASYMMETRIC_HEBBIAN_PARAMS, STDP_PARAMS, STDP_LEARNING_WINDOW, TIME_STEP_IN_MSEC
+from nagi.constants import MEMBRANE_POTENTIAL_THRESHOLD, ASYMMETRIC_HEBBIAN_PARAMS, STDP_PARAMS, STDP_LEARNING_WINDOW
 from nagi.stdp import *
 
 
@@ -31,8 +31,8 @@ class SpikingNeuron(object):
         self.current = self.bias
 
         # Dictionaries containing time elapsed since last input and output spikes.
-        self.output_spike_timing: float = STDP_LEARNING_WINDOW + TIME_STEP_IN_MSEC
-        self.input_spike_timings: Dict[int, float] = {key: STDP_LEARNING_WINDOW + TIME_STEP_IN_MSEC for key in self.inputs.keys()}
+        self.output_spike_timing: float = STDP_LEARNING_WINDOW
+        self.input_spike_timings: Dict[int, float] = {key: STDP_LEARNING_WINDOW for key in self.inputs.keys()}
 
     def advance(self, dt: float):
         """
@@ -84,8 +84,8 @@ class SpikingNeuron(object):
         self.fired = 0
         self.current = self.bias
 
-        self.output_spike_timing = STDP_LEARNING_WINDOW + TIME_STEP_IN_MSEC
-        self.input_spike_timings = {key: STDP_LEARNING_WINDOW + TIME_STEP_IN_MSEC for key in self.inputs.keys()}
+        self.output_spike_timing = STDP_LEARNING_WINDOW
+        self.input_spike_timings = {key: STDP_LEARNING_WINDOW for key in self.inputs.keys()}
 
     def stpd_update(self, key: int):
         """
@@ -97,7 +97,7 @@ class SpikingNeuron(object):
         # TODO: Make learning rule dynamic. Part of genome?
 
         delta_t = self.input_spike_timings[key] - self.output_spike_timing
-        if abs(delta_t) <= STDP_LEARNING_WINDOW:
+        if abs(delta_t) < STDP_LEARNING_WINDOW:
             weight = self.inputs[key]
             delta_weight = asymmetric_anti_hebbian(delta_t, **ASYMMETRIC_HEBBIAN_PARAMS)
             sigma, w_min, w_max = STDP_PARAMS['sigma'], STDP_PARAMS['w_min'], STDP_PARAMS['w_max']
