@@ -30,7 +30,7 @@ class SpikingNeuron(object):
         self.fired = 0
         self.current = self.bias
 
-        # Dictionaries containing time elapsed since last input and output spikes.
+        # Variables containing time elapsed since last input and output spikes.
         self.output_spike_timing: float = STDP_LEARNING_WINDOW
         self.input_spike_timings: Dict[int, float] = {key: STDP_LEARNING_WINDOW for key in self.inputs.keys()}
 
