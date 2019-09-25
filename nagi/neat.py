@@ -3,7 +3,7 @@ from collections import defaultdict
 import numpy as np
 import random
 from enum import Enum
-from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE
+from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, MAX_CONNECTION_MUTATION_ATTEMPTS
 
 
 class LearningRule(Enum):
@@ -57,7 +57,7 @@ class Genome(object):
         self.output_keys = [i for i in range(input_size, input_size + output_size)]
 
         # Initialize node and connection genes for inputs and outputs.
-        # TODO: Innovation numbers need to be kept track of by the overbearing run of the NEAT-algorithm.
+        # TODO: Innovation numbers need to be kept track of by the NEAT-algorithm itself in a global innovations list.
         # TODO: Should self.nodes and self.connections be dictionairies or lists?
 
         innovation_number = 0
@@ -74,9 +74,10 @@ class Genome(object):
             possible_outputs = [node.key for node in self.nodes.values() if node.node_type != NodeType.input]
             connections = [(connection.in_node, connection.out_node) for connection in self.connections.values()]
 
-            while True:
+            for attempts in range(MAX_CONNECTION_MUTATION_ATTEMPTS):
                 out_node = random.choice(possible_outputs)
                 in_node = random.choice([key for key in self.nodes.keys() if key != out_node])
+
                 if creates_cycle(connections, in_node, out_node) or (in_node, out_node) in connections:
                     continue
 
