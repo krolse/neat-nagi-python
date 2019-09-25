@@ -3,7 +3,9 @@ from collections import defaultdict
 import numpy as np
 import random
 from enum import Enum
-from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, MAX_CONNECTION_MUTATION_ATTEMPTS
+
+from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, MAX_CONNECTION_MUTATION_ATTEMPTS, \
+    ADD_NODE_MUTATE_RATE
 
 
 class LearningRule(Enum):
@@ -27,7 +29,8 @@ class NodeGene(object):
 
 class HiddenNodeGene(NodeGene):
     # TODO: Should the hidden node gene have a bias, or should the bias be randomly initialized like weights?
-    def __init__(self, key: int, node_type: NodeType, is_inhibitory: bool, learning_rule: LearningRule):
+    def __init__(self, key: int, node_type: NodeType, is_inhibitory: bool = False,
+                 learning_rule: LearningRule = LearningRule.asymmetric_hebbian):
         super(HiddenNodeGene, self).__init__(key, node_type)
         self.is_inhibitory = is_inhibitory
         self.learning_rule = learning_rule
@@ -84,6 +87,24 @@ class Genome(object):
                 innovation_number = len(self.connections)
                 self.connections[innovation_number] = ConnectionGene(in_node, out_node, innovation_number)
                 break
+
+    def mutate_add_node(self):
+        if random.random() < ADD_NODE_MUTATE_RATE:
+            if not self.connections:
+                return
+
+            connection = random.choice(list(self.connections.values()))
+            connection.enabled = False
+
+            new_node_gene = HiddenNodeGene(len(self.nodes), NodeType.hidden)
+            self.nodes[new_node_gene.key] = new_node_gene
+
+            # TODO: Update global innovation numbers here.
+            connection_to_new_node = ConnectionGene(connection.in_node, new_node_gene.key, len(self.connections))
+            self.connections[len(self.connections)] = connection_to_new_node
+
+            connection_from_new_node = ConnectionGene(new_node_gene.key, connection.out_node, len(self.connections))
+            self.connections[len(self.connections)] = connection_from_new_node
 
 
 # TODO: Rewrite this.
