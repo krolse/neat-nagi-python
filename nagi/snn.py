@@ -130,7 +130,8 @@ class SpikingNeuralNetwork(object):
 
         :param inputs: List of voltage values."""
 
-        assert len(inputs) == len(self.inputs), f"Number of inputs {len(inputs)} does not match number of input nodes {len(self.inputs)} "
+        assert len(inputs) == len(
+            self.inputs), f"Number of inputs {len(inputs)} does not match number of input nodes {len(self.inputs)} "
 
         for key, voltage in zip(self.inputs, inputs):
             self.input_values[key] = voltage
