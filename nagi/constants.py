@@ -10,8 +10,8 @@ RESONATOR_PARAMS = {'a': 0.10, 'b': 0.25, 'c': -65.0, 'd': 2.00}
 LOW_THRESHOLD_SPIKING_PARAMS = {'a': 0.02, 'b': 0.25, 'c': -65.0, 'd': 2.00}
 
 #STDP
-ASYMMETRIC_HEBBIAN_PARAMS = {'a_plus': 1, 'a_minus': 1, 'tau_plus': 10, 'tau_minus': 10, 'w_max': 1.5, 'w_min': -1.5}
-STDP_PARAMS = {'sigma': 0.1, 'w_max': 1.5, 'w_min': -1.5}
+ASYMMETRIC_HEBBIAN_PARAMS = {'a_plus': 1, 'a_minus': 1, 'tau_plus': 10, 'tau_minus': 10}
+STDP_PARAMS = {'sigma': 0.1, 'w_max': 1, 'w_min': 0}
 STDP_LEARNING_WINDOW = 40.0
 
 # NEAT

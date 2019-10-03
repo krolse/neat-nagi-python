@@ -31,8 +31,9 @@ class SpikingNeuron(object):
         self.current = self.bias
 
         # Variables containing time elapsed since last input and output spikes.
-        self.output_spike_timing: float = STDP_LEARNING_WINDOW
-        self.input_spike_timings: Dict[int, float] = {key: STDP_LEARNING_WINDOW for key in self.inputs.keys()}
+        self.output_spike_timing: float = 0
+        self.input_spike_timings: Dict[int, float] = {key: 0 for key in self.inputs.keys()}
+        self.has_fired = False
 
     def advance(self, dt: float):
         """
@@ -60,13 +61,14 @@ class SpikingNeuron(object):
 
         for key in self.input_spike_timings.keys():
             # STDP update on received input spike.
-            if self.input_spike_timings[key] == 0:
+            if self.input_spike_timings[key] == 0 and self.has_fired:
                 self.stpd_update(key)
 
             self.input_spike_timings[key] += dt
 
         if self.membrane_potential > MEMBRANE_POTENTIAL_THRESHOLD:
             self.fired = 1
+            self.has_fired = True
             self.output_spike_timing = 0
             self.membrane_potential = self.c
             self.membrane_recovery += self.d
@@ -96,16 +98,16 @@ class SpikingNeuron(object):
         """
         # TODO: Make learning rule dynamic. Part of genome?
 
-        delta_t = self.input_spike_timings[key] - self.output_spike_timing
+        delta_t = self.output_spike_timing - self.input_spike_timings[key]
         if abs(delta_t) < STDP_LEARNING_WINDOW:
             weight = self.inputs[key]
-            delta_weight = asymmetric_anti_hebbian(delta_t, **ASYMMETRIC_HEBBIAN_PARAMS)
+            delta_weight = asymmetric_hebbian(delta_t, **ASYMMETRIC_HEBBIAN_PARAMS)
             sigma, w_min, w_max = STDP_PARAMS['sigma'], STDP_PARAMS['w_min'], STDP_PARAMS['w_max']
 
             if delta_weight > 0:
-                self.inputs[key] += sigma * delta_weight * (weight - abs(w_min))
-            elif delta_weight < 0:
                 self.inputs[key] += sigma * delta_weight * (w_max - weight)
+            elif delta_weight < 0:
+                self.inputs[key] += sigma * delta_weight * (weight - abs(w_min))
 
 
 class SpikingNeuralNetwork(object):
@@ -142,21 +144,21 @@ class SpikingNeuralNetwork(object):
         through each input of each neuron and evaluates the values to advance the network. The values can come from
         either input nodes, or firing neurons in a previous layer.
 
-        :param float dt: Time step in miliseconds.
+        :param dt: Time step in miliseconds.
         :return: List of the output values of the network after advance."""
 
         for neuron in self.neurons.values():
             neuron.current = neuron.bias
-            for key, weight in neuron.inputs.values():
+            for key, weight in neuron.inputs.items():
                 in_neuron = self.neurons.get(key)
                 if in_neuron is not None:
                     in_value = in_neuron.fired
-
-                    # Trigger STDP on received input spike.
-                    if in_neuron.fired:
-                        neuron.input_spike_timings[key] = 0
                 else:
                     in_value = self.input_values[key]
+
+                # Trigger STDP on received input spike.
+                if in_value:
+                    neuron.input_spike_timings[key] = 0
 
                 neuron.current += in_value * weight
                 neuron.advance(dt)
