@@ -1,4 +1,5 @@
 from math import exp
+from scipy.stats import norm
 
 
 def asymmetric_hebbian(delta_t: float, a_plus: float, a_minus: float, tau_plus: float, tau_minus: float) -> float:
@@ -36,3 +37,10 @@ def asymmetric_anti_hebbian(delta_t: float, a_plus: float, a_minus: float, tau_p
     else:
         return -a_minus * exp(delta_t / tau_minus)
 
+
+def symmetric_hebbian(delta_t: float, a: float, std: float):
+    return a * (1 - delta_t ** 2 / std ** 2) * exp(-delta_t ** 2 / (2 * std ** 2))
+
+
+def symmetric_anti_hebbian(delta_t: float, a: float, mean: float, std: float):
+    return -a*norm.pdf(delta_t, mean, std)

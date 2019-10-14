@@ -107,8 +107,8 @@ class SpikingNeuron(object):
 
         delta_weight = 0
         weight = self.inputs[key]
-
         sigma, w_min, w_max = STDP_PARAMS['sigma'], STDP_PARAMS['w_min'], STDP_PARAMS['w_max']
+
         if stdp_type is StdpType.input:
             delta_t = self.output_spike_timing - 0
             if abs(delta_t) < STDP_LEARNING_WINDOW:
