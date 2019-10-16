@@ -1,6 +1,12 @@
+from enum import Enum
 from typing import List, Dict
 from nagi.constants import MEMBRANE_POTENTIAL_THRESHOLD, ASYMMETRIC_HEBBIAN_PARAMS, STDP_PARAMS, STDP_LEARNING_WINDOW
 from nagi.stdp import *
+
+
+class StdpType(Enum):
+    input = 1
+    output = 2
 
 
 class SpikingNeuron(object):
@@ -32,7 +38,7 @@ class SpikingNeuron(object):
 
         # Variables containing time elapsed since last input and output spikes.
         self.output_spike_timing: float = 0
-        self.input_spike_timings: Dict[int, float] = {key: 0 for key in self.inputs.keys()}
+        self.input_spike_timings: Dict[int, list[float]] = {key: [] for key in self.inputs.keys()}
         self.has_fired = False
 
     def advance(self, dt: float):
@@ -61,10 +67,10 @@ class SpikingNeuron(object):
 
         for key in self.input_spike_timings.keys():
             # STDP update on received input spike.
-            if self.input_spike_timings[key] == 0 and self.has_fired:
-                self.stpd_update(key)
+            if 0 in self.input_spike_timings[key] and self.has_fired:
+                self.stpd_update(key, StdpType.input)
 
-            self.input_spike_timings[key] += dt
+            self.input_spike_timings[key] = [t + dt for t in self.input_spike_timings[key] if t + dt < STDP_LEARNING_WINDOW]
 
         if self.membrane_potential > MEMBRANE_POTENTIAL_THRESHOLD:
             self.fired = 1
@@ -75,7 +81,7 @@ class SpikingNeuron(object):
 
             # STDP on output spike.
             for key in self.input_spike_timings.keys():
-                self.stpd_update(key)
+                self.stpd_update(key, StdpType.output)
 
     def reset(self):
         """ Resets all state variables."""
@@ -86,28 +92,38 @@ class SpikingNeuron(object):
         self.fired = 0
         self.current = self.bias
 
-        self.output_spike_timing = STDP_LEARNING_WINDOW
-        self.input_spike_timings = {key: STDP_LEARNING_WINDOW for key in self.inputs.keys()}
+        self.output_spike_timing = 0
+        self.input_spike_timings = {key: 0 for key in self.inputs.keys()}
 
-    def stpd_update(self, key: int):
+    def stpd_update(self, key: int, stdp_type: StdpType):
         """
         Applies STDP to the weight with the supplied key.
 
+        :param stdp_type:
         :param key: The key identifying the synapse weight to be updated.
         :return: void
         """
         # TODO: Make learning rule dynamic. Part of genome?
 
-        delta_t = self.output_spike_timing - self.input_spike_timings[key]
-        if abs(delta_t) < STDP_LEARNING_WINDOW:
-            weight = self.inputs[key]
-            delta_weight = asymmetric_hebbian(delta_t, **ASYMMETRIC_HEBBIAN_PARAMS)
-            sigma, w_min, w_max = STDP_PARAMS['sigma'], STDP_PARAMS['w_min'], STDP_PARAMS['w_max']
+        delta_weight = 0
+        weight = self.inputs[key]
+        sigma, w_min, w_max = STDP_PARAMS['sigma'], STDP_PARAMS['w_min'], STDP_PARAMS['w_max']
 
-            if delta_weight > 0:
-                self.inputs[key] += sigma * delta_weight * (w_max - weight)
-            elif delta_weight < 0:
-                self.inputs[key] += sigma * delta_weight * (weight - abs(w_min))
+        if stdp_type is StdpType.input:
+            delta_t = self.output_spike_timing - 0
+            if abs(delta_t) < STDP_LEARNING_WINDOW:
+                delta_weight = asymmetric_hebbian(delta_t, **ASYMMETRIC_HEBBIAN_PARAMS)
+
+        elif stdp_type is StdpType.output:
+            for input_spike_timing in self.input_spike_timings[key]:
+                delta_t = self.output_spike_timing - input_spike_timing
+                if abs(delta_t) < STDP_LEARNING_WINDOW:
+                    delta_weight += asymmetric_hebbian(delta_t, **ASYMMETRIC_HEBBIAN_PARAMS)
+
+        if delta_weight > 0:
+            self.inputs[key] += sigma * delta_weight * (w_max - weight)
+        elif delta_weight < 0:
+            self.inputs[key] += sigma * delta_weight * (weight - abs(w_min))
 
 
 class SpikingNeuralNetwork(object):
@@ -158,7 +174,7 @@ class SpikingNeuralNetwork(object):
 
                 # Trigger STDP on received input spike.
                 if in_value:
-                    neuron.input_spike_timings[key] = 0
+                    neuron.input_spike_timings[key].append(0)
 
                 neuron.current += in_value * weight
                 neuron.advance(dt)

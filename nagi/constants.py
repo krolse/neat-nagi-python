@@ -11,6 +11,8 @@ LOW_THRESHOLD_SPIKING_PARAMS = {'a': 0.02, 'b': 0.25, 'c': -65.0, 'd': 2.00}
 
 #STDP
 ASYMMETRIC_HEBBIAN_PARAMS = {'a_plus': 1, 'a_minus': 1, 'tau_plus': 10, 'tau_minus': 10}
+SYMMETRIC_HEBBIAN_PARAMS = {'a': 0.78, 'std': 37}
+SYMMETRIC_ANTI_HEBBIAN_PARAMS = {'a': 20, 'mean': 0, 'std': 10}
 STDP_PARAMS = {'sigma': 0.1, 'w_max': 1, 'w_min': 0}
 STDP_LEARNING_WINDOW = 40.0
 

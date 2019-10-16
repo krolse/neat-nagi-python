@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from nagi import snn, constants
+from nagi.constants import TIME_STEP_IN_MSEC
 
 
 def plot_spikes(spikes, title):
@@ -30,19 +31,19 @@ def plot_spikes(spikes, title):
     plt.ylabel("Recovery (u)")
     plt.xlabel("Time (in ms)")
     plt.grid()
-    plt.plot(t_values, u_values, "r-")
+    plt.plot(t_values, u_values, "m-")
 
     plt.subplot(5, 1, 4)
     plt.ylabel("Current (I)")
     plt.xlabel("Time (in ms)")
     plt.grid()
-    plt.plot(t_values, I_values, "r-o")
+    plt.plot(t_values, I_values, "c-")
 
     plt.subplot(5, 1, 5)
     plt.ylabel("Weight")
     plt.xlabel("Time (in ms)")
     plt.grid()
-    plt.plot(t_values, w_values, "r-")
+    plt.plot(t_values, w_values, "b-")
 
     fig = plt.figure()
     plt.title("Izhikevich's spiking neuron model u/v ({0!s})".format(title))
@@ -56,14 +57,14 @@ def plot_spikes(spikes, title):
 
 
 def show(title, a, b, c, d):
-    neuron = snn.SpikingNeuron(5, a, b, c, d, {0: 1})
+    neuron = snn.SpikingNeuron(5, a, b, c, d, {0: 0.5})
     network = snn.SpikingNeuralNetwork({1: neuron}, [0], [1])
     spike_train = []
-    for i in range(1000):
-        network.set_inputs([5 if i % 10 == 0 else 0])
-        spike_train.append((1.0 * i, neuron.current, neuron.membrane_potential, neuron.membrane_recovery, neuron.fired,
+    for i in range(5000):
+        network.set_inputs([40 if i % 50 == 0 else 0])
+        spike_train.append((TIME_STEP_IN_MSEC * i, neuron.current, neuron.membrane_potential, neuron.membrane_recovery, neuron.fired,
                             neuron.inputs[0]))
-        network.advance(0.25)
+        network.advance(TIME_STEP_IN_MSEC)
 
     plot_spikes(spike_train, title)
 
