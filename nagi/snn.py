@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import List, Dict
-from nagi.constants import MEMBRANE_POTENTIAL_THRESHOLD, ASYMMETRIC_HEBBIAN_PARAMS, STDP_PARAMS, STDP_LEARNING_WINDOW
+from nagi.constants import MEMBRANE_POTENTIAL_THRESHOLD, STDP_PARAMS, STDP_LEARNING_WINDOW
 from nagi.stdp import *
 
 
@@ -12,7 +12,8 @@ class StdpType(Enum):
 class SpikingNeuron(object):
     """Class representing a single spiking neuron."""
 
-    def __init__(self, bias: float, a: float, b: float, c: float, d: float, inputs: Dict[int, float]):
+    def __init__(self, bias: float, a: float, b: float, c: float, d: float, inputs: Dict[int, float],
+                 learning_rule: LearningRule):
         """
         a, b, c, and d are the parameters of the Izhikevich model.
 
@@ -30,6 +31,7 @@ class SpikingNeuron(object):
         self.c = c
         self.d = d
         self.inputs = inputs
+        self.learning_rule = learning_rule
 
         self.membrane_potential = self.c
         self.membrane_recovery = self.b * self.membrane_potential
@@ -70,7 +72,8 @@ class SpikingNeuron(object):
             if 0 in self.input_spike_timings[key] and self.has_fired:
                 self.stpd_update(key, StdpType.input)
 
-            self.input_spike_timings[key] = [t + dt for t in self.input_spike_timings[key] if t + dt < STDP_LEARNING_WINDOW]
+            self.input_spike_timings[key] = [t + dt for t in self.input_spike_timings[key] if
+                                             t + dt < STDP_LEARNING_WINDOW]
 
         if self.membrane_potential > MEMBRANE_POTENTIAL_THRESHOLD:
             self.fired = 1
@@ -95,6 +98,9 @@ class SpikingNeuron(object):
         self.output_spike_timing = 0
         self.input_spike_timings = {key: 0 for key in self.inputs.keys()}
 
+    def apply_learning_rule(self, delta_t: float):
+        return get_learning_rule_function(self.learning_rule)(delta_t, **get_learning_rule_params(self.learning_rule))
+
     def stpd_update(self, key: int, stdp_type: StdpType):
         """
         Applies STDP to the weight with the supplied key.
@@ -112,13 +118,13 @@ class SpikingNeuron(object):
         if stdp_type is StdpType.input:
             delta_t = self.output_spike_timing - 0
             if abs(delta_t) < STDP_LEARNING_WINDOW:
-                delta_weight = asymmetric_hebbian(delta_t, **ASYMMETRIC_HEBBIAN_PARAMS)
+                delta_weight = self.apply_learning_rule(delta_t)
 
         elif stdp_type is StdpType.output:
             for input_spike_timing in self.input_spike_timings[key]:
                 delta_t = self.output_spike_timing - input_spike_timing
                 if abs(delta_t) < STDP_LEARNING_WINDOW:
-                    delta_weight += asymmetric_hebbian(delta_t, **ASYMMETRIC_HEBBIAN_PARAMS)
+                    delta_weight += self.apply_learning_rule(delta_t)
 
         if delta_weight > 0:
             self.inputs[key] += sigma * delta_weight * (w_max - weight)

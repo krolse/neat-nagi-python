@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from nagi import snn, constants
 from nagi.constants import TIME_STEP_IN_MSEC
+from nagi.neat import LearningRule
 
 
 def plot_spikes(spikes, title):
@@ -56,8 +57,8 @@ def plot_spikes(spikes, title):
     plt.close()
 
 
-def show(title, a, b, c, d):
-    neuron = snn.SpikingNeuron(5, a, b, c, d, {0: 0.5})
+def show(title, learning_rule, a, b, c, d):
+    neuron = snn.SpikingNeuron(5, a, b, c, d, {0: 0.5}, learning_rule)
     network = snn.SpikingNeuralNetwork({1: neuron}, [0], [1])
     spike_train = []
     for i in range(5000):
@@ -70,12 +71,14 @@ def show(title, a, b, c, d):
 
 
 if __name__ == '__main__':
-    show('regular spiking', **constants.REGULAR_SPIKING_PARAMS)
-    show('intrinsically bursting', **constants.INTRINSICALLY_BURSTING_PARAMS)
-    show('chattering', **constants.CHATTERING_PARAMS)
-    show('fast spiking', **constants.FAST_SPIKING_PARAMS)
-    show('low-threshold spiking', **constants.LOW_THRESHOLD_SPIKING_PARAMS)
-    show('thalamo-cortical', **constants.THALAMO_CORTICAL_PARAMS)
-    show('resonator', **constants.RESONATOR_PARAMS)
+    for rule in LearningRule:
+        rule_string = rule.__str__().split(".")[1]
+        show(f'regular spiking, {rule_string}', rule, **constants.REGULAR_SPIKING_PARAMS)
+        show(f'intrinsically bursting, {rule_string}', rule, **constants.INTRINSICALLY_BURSTING_PARAMS)
+        show(f'chattering, {rule_string}', rule, **constants.CHATTERING_PARAMS)
+        show(f'fast spiking, {rule_string}', rule, **constants.FAST_SPIKING_PARAMS)
+        show(f'low-threshold spiking, {rule_string}', rule, **constants.LOW_THRESHOLD_SPIKING_PARAMS)
+        show(f'thalamo-cortical, {rule_string}', rule, **constants.THALAMO_CORTICAL_PARAMS)
+        show(f'resonator, {rule_string}', rule, **constants.RESONATOR_PARAMS)
 
     plt.show()
