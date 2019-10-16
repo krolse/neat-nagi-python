@@ -42,5 +42,6 @@ def symmetric_hebbian(delta_t: float, a: float, std: float):
     return a * (1 - delta_t ** 2 / std ** 2) * exp(-delta_t ** 2 / (2 * std ** 2))
 
 
-def symmetric_anti_hebbian(delta_t: float, a: float, mean: float, std: float):
-    return -a*norm.pdf(delta_t, mean, std)
+def symmetric_anti_hebbian(delta_t: float, a: float, std: float):
+    # return -a*norm.pdf(delta_t, mean, std)
+    return -a * (1 - delta_t ** 2 / std ** 2) * exp(-delta_t ** 2 / (2 * std ** 2))
