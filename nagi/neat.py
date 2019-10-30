@@ -74,19 +74,16 @@ class Genome(object):
 
     def mutate_add_connection(self):
         if random.random() < ADD_CONNECTION_MUTATE_RATE:
-            possible_outputs = [node.key for node in self.nodes.values() if node.node_type != NodeType.input]
-            connections = [(connection.in_node, connection.out_node) for connection in self.connections.values()]
+            (origin_node, destination_node) = random.choice(
+                [(origin_node.key, destionation_node.key)
+                 for origin_node in self.nodes.values()
+                 for destionation_node in self.nodes.values()
+                 if (origin_node, destionation_node) not in self.connections
+                 and origin_node.node_type is not NodeType.output
+                 and destionation_node is not NodeType.input])
 
-            for attempts in range(MAX_CONNECTION_MUTATION_ATTEMPTS):
-                out_node = random.choice(possible_outputs)
-                in_node = random.choice([key for key in self.nodes.keys() if key != out_node])
-
-                if creates_cycle(connections, in_node, out_node) or (in_node, out_node) in connections:
-                    continue
-
-                innovation_number = len(self.connections)
-                self.connections[innovation_number] = ConnectionGene(in_node, out_node, innovation_number)
-                break
+            innovation_number = len(self.connections)
+            self.connections[innovation_number] = ConnectionGene(origin_node, destination_node, innovation_number)
 
     def mutate_add_node(self):
         if random.random() < ADD_NODE_MUTATE_RATE:
@@ -105,31 +102,3 @@ class Genome(object):
 
             connection_from_new_node = ConnectionGene(new_node_gene.key, connection.out_node, len(self.connections))
             self.connections[len(self.connections)] = connection_from_new_node
-
-
-# TODO: Rewrite this.
-def creates_cycle(edges, u, v):
-    # check if there is a v->u path
-    if u == v:
-        return True
-
-    graph = defaultdict(list)
-    for i, j in edges:
-        graph[i].append(j)
-
-    if v not in graph:
-        return False
-
-    seen = set()
-    queue = [v]
-    while len(queue) > 0:
-        curr = queue[0]
-        queue = queue[1:]
-        seen.add(curr)
-        if curr == u:
-            return True
-
-        for child in graph[curr]:
-            if child not in seen:
-                queue.append(child)
-    return False
