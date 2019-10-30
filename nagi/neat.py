@@ -1,11 +1,8 @@
-from collections import defaultdict
-
 import numpy as np
 import random
 from enum import Enum
 
-from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, MAX_CONNECTION_MUTATION_ATTEMPTS, \
-    ADD_NODE_MUTATE_RATE
+from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, ADD_NODE_MUTATE_RATE
 
 
 class LearningRule(Enum):
