@@ -1,8 +1,10 @@
 import numpy as np
 import random
 from enum import Enum
+from copy import deepcopy
 
-from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, ADD_NODE_MUTATE_RATE
+from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, ADD_NODE_MUTATE_RATE, \
+    CONNECTIONS_DISJOINT_COEFFICIENT, CONNECTIONS_EXCESS_COEFFICIENT
 
 
 class LearningRule(Enum):
@@ -77,7 +79,7 @@ class Genome(object):
                  for destionation_node in self.nodes.values()
                  if (origin_node, destionation_node) not in self.connections
                  and origin_node.node_type is not NodeType.output
-                 and destionation_node is not NodeType.input])
+                 and destionation_node.node_type is not NodeType.input])
 
             innovation_number = len(self.connections)
             self.connections[innovation_number] = ConnectionGene(origin_node, destination_node, innovation_number)
@@ -99,3 +101,41 @@ class Genome(object):
 
             connection_from_new_node = ConnectionGene(new_node_gene.key, connection.out_node, len(self.connections))
             self.connections[len(self.connections)] = connection_from_new_node
+
+    # TODO: Inherit entire gene or should individual attributes within the gene also be randomly chosen/mixed?
+    def crossover_connections(self, other, child):
+        for key, connection_parent_1 in self.connections.items():
+            connection_parent_2 = other.connections.get(key)
+            if connection_parent_2 is not None:
+                child.connections[key] = random.choice([self, other]).connections[key]
+                # TODO: Preset chance of disabled connection gene in child if it is disabled in either parent.
+            else:
+                child.connections[key] = deepcopy(connection_parent_1)
+
+    def crossover_nodes(self, other, child):
+        for key, node_parent_1 in self.nodes.items():
+            node_parent_2 = other.nodes.get(key)
+            if node_parent_2 is not None:
+                child.nodes[key] = random.choice([self, other]).nodes[key]
+            else:
+                child.nodes[key] = deepcopy(node_parent_1)
+
+    def innovation_range(self):
+        return max([key for key in self.connections.keys()])
+
+    def get_number_of_distjoint_and_excess_connections(self, other):
+        disjoint_connections = 0
+        excess_connections = 0
+        nonmatches = set.union({key for key in self.connections.keys() if key not in other.connections.keys()},
+                               {key for key in other.connections.keys() if key not in self.connections.keys()})
+        for key in nonmatches:
+            if key <= self.innovation_range() and key <= other.innovation_range():
+                disjoint_connections += 1
+            else:
+                excess_connections += 1
+        return disjoint_connections, excess_connections
+
+    def connections_distance(self, other):
+        d, e = self.get_number_of_distjoint_and_excess_connections(other)
+        n = max({len(self.connections), len(other.connections)})
+        return (CONNECTIONS_DISJOINT_COEFFICIENT * d + CONNECTIONS_EXCESS_COEFFICIENT * e) / n
