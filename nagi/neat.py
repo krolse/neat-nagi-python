@@ -84,12 +84,11 @@ class Genome(object):
     def _mutate_add_connection(self):
         if random.random() < ADD_CONNECTION_MUTATE_RATE:
             (origin_node, destination_node) = random.choice(
-                [(origin_node.key, destionation_node.key)
+                [(origin_node.key, destination_node.key)
                  for origin_node in self.nodes.values()
-                 for destionation_node in self.nodes.values()
-                 if (origin_node, destionation_node) not in self.connections
-                 and origin_node.node_type is not NodeType.output
-                 and destionation_node.node_type is not NodeType.input])
+                 for destination_node in self.nodes.values()
+                 if (origin_node, destination_node) not in self.connections
+                 and destination_node.node_type is not NodeType.input])
 
             innovation_number = len(self.connections)
             self.connections[innovation_number] = ConnectionGene(origin_node, destination_node, innovation_number)
@@ -120,7 +119,6 @@ class Genome(object):
         for connection in self.connections.values():
             connection.mutate()
 
-    # TODO: Inherit entire gene or should individual attributes within the gene also be randomly chosen/mixed?
     def crossover_connections(self, other, child):
         for key, connection_parent_1 in self.connections.items():
             connection_parent_2 = other.connections.get(key)
@@ -130,6 +128,7 @@ class Genome(object):
             else:
                 child.connections[key] = deepcopy(connection_parent_1)
 
+    # TODO: Write this into the other crossover function. Inherit the nodes present in the connections.
     def crossover_nodes(self, other, child):
         for key, node_parent_1 in self.nodes.items():
             node_parent_2 = other.nodes.get(key)
@@ -141,7 +140,7 @@ class Genome(object):
     def innovation_range(self) -> int:
         return max([key for key in self.connections.keys()])
 
-    def _get_number_of_distjoint_and_excess_connections(self, other):
+    def _get_number_of_disjoint_and_excess_connections(self, other):
         disjoint_connections = 0
         excess_connections = 0
         nonmatches = set.union({key for key in self.connections.keys() if key not in other.connections.keys()},
@@ -153,14 +152,10 @@ class Genome(object):
                 excess_connections += 1
         return disjoint_connections, excess_connections
 
-    def _connections_distance(self, other):
-        d, e = self._get_number_of_distjoint_and_excess_connections(other)
+    def distance(self, other):
+        d, e = self._get_number_of_disjoint_and_excess_connections(other)
         n = max({len(self.connections), len(other.connections)})
         return (CONNECTIONS_DISJOINT_COEFFICIENT * d + CONNECTIONS_EXCESS_COEFFICIENT * e) / n
-
-    # TODO: Is connections enough for distance metric or should node distance be included?
-    def distance(self, other):
-        return self._connections_distance(other)
 
 
 class Species(object):
@@ -178,6 +173,7 @@ class Population(object):
         self.genomes = {}
         self.species = []
         self.genome_id_counter = count(0)
+        self.innovation_number = count(0)
 
         for _ in range(population_size):
             genome_id = next(self.genome_id_counter)
