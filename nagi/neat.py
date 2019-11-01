@@ -31,9 +31,9 @@ class NodeGene(object):
 
 class HiddenNodeGene(NodeGene):
     # TODO: Should the hidden node gene have a bias, or should the bias be randomly initialized like weights?
-    def __init__(self, key: int, node_type: NodeType, is_inhibitory: bool = False,
+    def __init__(self, key: int, is_inhibitory: bool = False,
                  learning_rule: LearningRule = LearningRule.asymmetric_hebbian):
-        super().__init__(key, node_type)
+        super().__init__(key, NodeType.hidden)
         self.is_inhibitory = is_inhibitory
         self.learning_rule = learning_rule
 
@@ -101,7 +101,7 @@ class Genome(object):
             connection = random.choice(list(self.connections.values()))
             connection.enabled = False
 
-            new_node_gene = HiddenNodeGene(len(self.nodes), NodeType.hidden)
+            new_node_gene = HiddenNodeGene(len(self.nodes))
             self.nodes[new_node_gene.key] = new_node_gene
 
             # TODO: Update global innovation numbers here.
@@ -137,7 +137,11 @@ class Genome(object):
             else:
                 child.nodes[key] = deepcopy(node_parent_1)
 
-    def innovation_range(self):
+    def innovation_range(self) -> int:
+        """
+        Returns the largest innovation number in the genome.
+        :return: The highest innovation number in the genome.
+        """
         return max([key for key in self.connections.keys()])
 
     def _get_number_of_distjoint_and_excess_connections(self, other):
@@ -152,8 +156,8 @@ class Genome(object):
                 excess_connections += 1
         return disjoint_connections, excess_connections
 
+    # TODO: Is connections enough for distance metric or should node distance be included?
     def connections_distance(self, other):
         d, e = self._get_number_of_distjoint_and_excess_connections(other)
         n = max({len(self.connections), len(other.connections)})
         return (CONNECTIONS_DISJOINT_COEFFICIENT * d + CONNECTIONS_EXCESS_COEFFICIENT * e) / n
-

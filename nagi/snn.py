@@ -109,7 +109,6 @@ class SpikingNeuron(object):
         :param key: The key identifying the synapse weight to be updated.
         :return: void
         """
-        # TODO: Make learning rule dynamic. Part of genome?
 
         delta_weight = 0
         weight = self.inputs[key]
