@@ -40,7 +40,7 @@ class SpikingNeuron(object):
 
         # Variables containing time elapsed since last input and output spikes.
         self.output_spike_timing: float = 0
-        self.input_spike_timings: Dict[int, list[float]] = {key: [] for key in self.inputs.keys()}
+        self.input_spike_timings: Dict[int, List[float]] = {key: [] for key in self.inputs.keys()}
         self.has_fired = False
 
     def advance(self, dt: float):

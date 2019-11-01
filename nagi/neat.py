@@ -2,6 +2,7 @@ import numpy as np
 import random
 from enum import Enum
 from copy import deepcopy
+from itertools import count
 
 from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, ADD_NODE_MUTATE_RATE, \
     CONNECTIONS_DISJOINT_COEFFICIENT, CONNECTIONS_EXCESS_COEFFICIENT, INHIBITORY_MUTATE_RATE, LEARNING_RULE_MUTATE_RATE
@@ -138,10 +139,6 @@ class Genome(object):
                 child.nodes[key] = deepcopy(node_parent_1)
 
     def innovation_range(self) -> int:
-        """
-        Returns the largest innovation number in the genome.
-        :return: The highest innovation number in the genome.
-        """
         return max([key for key in self.connections.keys()])
 
     def _get_number_of_distjoint_and_excess_connections(self, other):
@@ -156,8 +153,34 @@ class Genome(object):
                 excess_connections += 1
         return disjoint_connections, excess_connections
 
-    # TODO: Is connections enough for distance metric or should node distance be included?
-    def connections_distance(self, other):
+    def _connections_distance(self, other):
         d, e = self._get_number_of_distjoint_and_excess_connections(other)
         n = max({len(self.connections), len(other.connections)})
         return (CONNECTIONS_DISJOINT_COEFFICIENT * d + CONNECTIONS_EXCESS_COEFFICIENT * e) / n
+
+    # TODO: Is connections enough for distance metric or should node distance be included?
+    def distance(self, other):
+        return self._connections_distance(other)
+
+
+class Species(object):
+    def __init__(self, key: int, members=None, representative: Genome = None):
+        self.key = key
+        self.members = members if members is not None else []
+        self.representative = representative
+
+    def choose_random_representative(self):
+        self.representative = random.choice([specimen for specimen in self.members])
+
+
+class Population(object):
+    def __init__(self, population_size: int, input_size: int, output_size: int):
+        self.genomes = {}
+        self.species = []
+        self.genome_id_counter = count(0)
+
+        for _ in range(population_size):
+            genome_id = next(self.genome_id_counter)
+            self.genomes[genome_id] = Genome(genome_id, input_size, output_size)
+
+    # def initial_population(self):
