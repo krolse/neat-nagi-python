@@ -4,7 +4,7 @@ from enum import Enum
 from copy import deepcopy
 
 from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, ADD_NODE_MUTATE_RATE, \
-    CONNECTIONS_DISJOINT_COEFFICIENT, CONNECTIONS_EXCESS_COEFFICIENT
+    CONNECTIONS_DISJOINT_COEFFICIENT, CONNECTIONS_EXCESS_COEFFICIENT, INHIBITORY_MUTATE_RATE, LEARNING_RULE_MUTATE_RATE
 
 
 class LearningRule(Enum):
@@ -25,14 +25,23 @@ class NodeGene(object):
         self.key = key
         self.node_type = node_type
 
+    def mutate(self):
+        pass
+
 
 class HiddenNodeGene(NodeGene):
     # TODO: Should the hidden node gene have a bias, or should the bias be randomly initialized like weights?
     def __init__(self, key: int, node_type: NodeType, is_inhibitory: bool = False,
                  learning_rule: LearningRule = LearningRule.asymmetric_hebbian):
-        super(HiddenNodeGene, self).__init__(key, node_type)
+        super().__init__(key, node_type)
         self.is_inhibitory = is_inhibitory
         self.learning_rule = learning_rule
+
+    def mutate(self):
+        if np.random.random() < INHIBITORY_MUTATE_RATE:
+            self.is_inhibitory = not self.is_inhibitory
+        if np.random.random() < LEARNING_RULE_MUTATE_RATE:
+            self.learning_rule = random.choice([rule for rule in LearningRule if rule is not self.learning_rule])
 
 
 class ConnectionGene(object):
@@ -71,7 +80,7 @@ class Genome(object):
                 self.connections[innovation_number] = ConnectionGene(input_key, output_key, innovation_number)
                 innovation_number += 1
 
-    def mutate_add_connection(self):
+    def _mutate_add_connection(self):
         if random.random() < ADD_CONNECTION_MUTATE_RATE:
             (origin_node, destination_node) = random.choice(
                 [(origin_node.key, destionation_node.key)
@@ -84,7 +93,7 @@ class Genome(object):
             innovation_number = len(self.connections)
             self.connections[innovation_number] = ConnectionGene(origin_node, destination_node, innovation_number)
 
-    def mutate_add_node(self):
+    def _mutate_add_node(self):
         if random.random() < ADD_NODE_MUTATE_RATE:
             if not self.connections:
                 return
@@ -101,6 +110,14 @@ class Genome(object):
 
             connection_from_new_node = ConnectionGene(new_node_gene.key, connection.out_node, len(self.connections))
             self.connections[len(self.connections)] = connection_from_new_node
+
+    def mutate(self):
+        self._mutate_add_node()
+        self._mutate_add_connection()
+        for node in self.nodes.values():
+            node.mutate()
+        for connection in self.connections.values():
+            connection.mutate()
 
     # TODO: Inherit entire gene or should individual attributes within the gene also be randomly chosen/mixed?
     def crossover_connections(self, other, child):
@@ -123,7 +140,7 @@ class Genome(object):
     def innovation_range(self):
         return max([key for key in self.connections.keys()])
 
-    def get_number_of_distjoint_and_excess_connections(self, other):
+    def _get_number_of_distjoint_and_excess_connections(self, other):
         disjoint_connections = 0
         excess_connections = 0
         nonmatches = set.union({key for key in self.connections.keys() if key not in other.connections.keys()},
@@ -136,6 +153,7 @@ class Genome(object):
         return disjoint_connections, excess_connections
 
     def connections_distance(self, other):
-        d, e = self.get_number_of_distjoint_and_excess_connections(other)
+        d, e = self._get_number_of_distjoint_and_excess_connections(other)
         n = max({len(self.connections), len(other.connections)})
         return (CONNECTIONS_DISJOINT_COEFFICIENT * d + CONNECTIONS_EXCESS_COEFFICIENT * e) / n
+
