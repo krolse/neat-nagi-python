@@ -119,23 +119,19 @@ class Genome(object):
         for connection in self.connections.values():
             connection.mutate()
 
-    def crossover_connections(self, other, child):
+    def crossover(self, other, child):
         for key, connection_parent_1 in self.connections.items():
             connection_parent_2 = other.connections.get(key)
-            if connection_parent_2 is not None:
-                child.connections[key] = random.choice([self, other]).connections[key]
-                # TODO: Preset chance of disabled connection gene in child if it is disabled in either parent.
-            else:
-                child.connections[key] = deepcopy(connection_parent_1)
+            chosen_parent = random.choice([self, other]) if connection_parent_2 is not None else self
+            child.connections[key] = deepcopy(chosen_parent.connections[key])
+            # TODO: Preset chance of disabled connection gene in child if it is disabled in either parent.
 
-    # TODO: Write this into the other crossover function. Inherit the nodes present in the connections.
-    def crossover_nodes(self, other, child):
-        for key, node_parent_1 in self.nodes.items():
-            node_parent_2 = other.nodes.get(key)
-            if node_parent_2 is not None:
-                child.nodes[key] = random.choice([self, other]).nodes[key]
-            else:
-                child.nodes[key] = deepcopy(node_parent_1)
+            in_node_key = chosen_parent.connections[key].in_node
+            out_node_key = chosen_parent.connections[key].out_node
+            if not child.nodes.get(in_node_key):
+                child.nodes[in_node_key] = deepcopy(chosen_parent.nodes[in_node_key])
+            if not child.nodes.get(out_node_key):
+                child.nodes[in_node_key] = deepcopy(chosen_parent.nodes[in_node_key])
 
     def innovation_range(self) -> int:
         return max([key for key in self.connections.keys()])
