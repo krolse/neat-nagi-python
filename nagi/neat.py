@@ -161,7 +161,7 @@ class Species(object):
         self.representative = representative
 
     def choose_random_representative(self):
-        self.representative = random.choice([specimen for specimen in self.members])
+        self.representative = random.choice(self.members)
 
 
 class Population(object):
@@ -174,5 +174,3 @@ class Population(object):
         for _ in range(population_size):
             genome_id = next(self.genome_id_counter)
             self.genomes[genome_id] = Genome(genome_id, input_size, output_size)
-
-    # def initial_population(self):
