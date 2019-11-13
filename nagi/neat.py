@@ -3,6 +3,7 @@ import random
 from enum import Enum
 from copy import deepcopy
 from itertools import count
+from typing import List, Dict
 
 from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, ADD_NODE_MUTATE_RATE, \
     CONNECTIONS_DISJOINT_COEFFICIENT, CONNECTIONS_EXCESS_COEFFICIENT, INHIBITORY_MUTATE_RATE, LEARNING_RULE_MUTATE_RATE
@@ -155,7 +156,7 @@ class Genome(object):
 
 
 class Species(object):
-    def __init__(self, key: int, members=None, representative: Genome = None):
+    def __init__(self, key: int, members: List[Genome] = None, representative: Genome = None):
         self.key = key
         self.members = members if members is not None else []
         self.representative = representative
@@ -167,10 +168,22 @@ class Species(object):
 class Population(object):
     def __init__(self, population_size: int, input_size: int, output_size: int):
         self.genomes = {}
-        self.species = []
+        self.species = {}
         self.genome_id_counter = count(0)
         self.innovation_number = count(0)
+        self.species_number = count(0)
 
         for _ in range(population_size):
             genome_id = next(self.genome_id_counter)
             self.genomes[genome_id] = Genome(genome_id, input_size, output_size)
+
+        species_id = next(self.species_number)
+        self.species[species_id] = Species(species_id, [genome for genome in self.genomes.values()],
+                                           self.genomes[0])
+
+    def _update_species(self):
+        for species in self.species.values():
+            species.members = [member for member in species.members if member in self.genomes.values()]
+
+    def speciate(self):
+        self._update_species()
