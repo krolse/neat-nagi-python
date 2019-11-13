@@ -3,7 +3,7 @@ import random
 from enum import Enum
 from copy import deepcopy
 from itertools import count
-from typing import List, Dict
+from typing import List, Dict, Iterator
 
 from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, ADD_NODE_MUTATE_RATE, \
     CONNECTIONS_DISJOINT_COEFFICIENT, CONNECTIONS_EXCESS_COEFFICIENT, INHIBITORY_MUTATE_RATE, LEARNING_RULE_MUTATE_RATE
@@ -59,28 +59,26 @@ class ConnectionGene(object):
 
 
 class Genome(object):
-    def __init__(self, key: int, input_size: int, output_size: int):
+    def __init__(self, key: int, input_size: int, output_size: int, innovation_number: Iterator,
+                 is_initial_genome: bool = False):
         self.key = key
-        self.input_size = input_size
-        self.output_size = output_size
-
+        self.innovation_number = innovation_number
         self.nodes = {}
         self.connections = {}
-        self.input_keys = [i for i in range(input_size)]
-        self.output_keys = [i for i in range(input_size, input_size + output_size)]
 
-        # Initialize node and connection genes for inputs and outputs.
-        # TODO: Innovation numbers need to be kept track of by the NEAT-algorithm itself in a global innovations list.
-        # TODO: Should self.nodes and self.connections be dictionairies or lists?
-
+        # Initialize node genes (and connection genes if it's an initial genome) for inputs and outputs.
+        input_keys = [i for i in range(input_size)]
+        output_keys = [i for i in range(input_size, input_size + output_size)]
         innovation_number = 0
-        for input_key in self.input_keys:
+
+        for input_key in input_keys:
             self.nodes[input_key] = NodeGene(input_key, NodeType.input)
-            for output_key in self.output_keys:
+            for output_key in output_keys:
                 if self.nodes[output_key] is None:
                     self.nodes[output_key] = NodeGene(output_key, NodeType.output)
-                self.connections[innovation_number] = ConnectionGene(input_key, output_key, innovation_number)
-                innovation_number += 1
+                if is_initial_genome:
+                    self.connections[innovation_number] = ConnectionGene(input_key, output_key, innovation_number)
+                    innovation_number += 1
 
     def _mutate_add_connection(self):
         if random.random() < ADD_CONNECTION_MUTATE_RATE:
@@ -91,7 +89,7 @@ class Genome(object):
                  if (origin_node, destination_node) not in self.connections
                  and destination_node.node_type is not NodeType.input])
 
-            innovation_number = len(self.connections)
+            innovation_number = next(self.innovation_number)
             self.connections[innovation_number] = ConnectionGene(origin_node, destination_node, innovation_number)
 
     def _mutate_add_node(self):
@@ -105,12 +103,13 @@ class Genome(object):
             new_node_gene = HiddenNodeGene(len(self.nodes))
             self.nodes[new_node_gene.key] = new_node_gene
 
-            # TODO: Update global innovation numbers here.
-            connection_to_new_node = ConnectionGene(connection.in_node, new_node_gene.key, len(self.connections))
-            self.connections[len(self.connections)] = connection_to_new_node
+            innovation_number = next(self.innovation_number)
+            connection_to_new_node = ConnectionGene(connection.in_node, new_node_gene.key, innovation_number)
+            self.connections[innovation_number] = connection_to_new_node
 
-            connection_from_new_node = ConnectionGene(new_node_gene.key, connection.out_node, len(self.connections))
-            self.connections[len(self.connections)] = connection_from_new_node
+            innovation_number = next(self.innovation_number)
+            connection_from_new_node = ConnectionGene(new_node_gene.key, connection.out_node, innovation_number)
+            self.connections[innovation_number] = connection_from_new_node
 
     def mutate(self):
         self._mutate_add_node()
@@ -170,16 +169,18 @@ class Population(object):
         self.genomes = {}
         self.species = {}
         self.genome_id_counter = count(0)
-        self.innovation_number = count(0)
         self.species_number = count(0)
+        self.innovation_number = count(input_size * output_size)
 
+        # Create initial population.
         for _ in range(population_size):
             genome_id = next(self.genome_id_counter)
-            self.genomes[genome_id] = Genome(genome_id, input_size, output_size)
+            self.genomes[genome_id] = Genome(genome_id, input_size, output_size, self.innovation_number,
+                                             is_initial_genome=True)
 
+        # Create initial species.
         species_id = next(self.species_number)
-        self.species[species_id] = Species(species_id, [genome for genome in self.genomes.values()],
-                                           self.genomes[0])
+        self.species[species_id] = Species(species_id, [genome for genome in self.genomes.values()], self.genomes[0])
 
     def _update_species(self):
         for species in self.species.values():
