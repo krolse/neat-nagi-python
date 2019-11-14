@@ -169,22 +169,32 @@ class Population(object):
         self.genomes = {}
         self.species = {}
         self.genome_id_counter = count(0)
-        self.species_number = count(0)
-        self.innovation_number = count(input_size * output_size)
+        self.species_id_counter = count(0)
+        self.innovation_number_counter = count(input_size * output_size)
+        self._input_size = input_size
+        self._output_size = output_size
 
         # Create initial population.
         for _ in range(population_size):
             genome_id = next(self.genome_id_counter)
-            self.genomes[genome_id] = Genome(genome_id, input_size, output_size, self.innovation_number,
+            self.genomes[genome_id] = Genome(genome_id, input_size, output_size, self.innovation_number_counter,
                                              is_initial_genome=True)
 
         # Create initial species.
-        species_id = next(self.species_number)
+        species_id = next(self.species_id_counter)
         self.species[species_id] = Species(species_id, [genome for genome in self.genomes.values()], self.genomes[0])
 
     def _update_species(self):
         for species in self.species.values():
             species.members = [member for member in species.members if member in self.genomes.values()]
 
-    def speciate(self):
-        self._update_species()
+    # def speciate(self):
+    #     self._update_species()
+
+    def create_new_offspring(self, parent_1: Genome, parent_2: Genome, fitness_1: float, fitness_2: float):
+        if fitness_2 > fitness_1:
+            parent_1, parent_2 = parent_2, parent_1
+        offspring = Genome(next(self.genome_id_counter), self._input_size, self._output_size,
+                           self.innovation_number_counter)
+        parent_1.crossover(parent_2, offspring)
+        return offspring
