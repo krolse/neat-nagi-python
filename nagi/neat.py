@@ -47,6 +47,17 @@ class HiddenNodeGene(NodeGene):
             self.learning_rule = random.choice([rule for rule in LearningRule if rule is not self.learning_rule])
 
 
+class OutputNodeGene(NodeGene):
+    def __init__(self, key: int, learning_rule: LearningRule = LearningRule.asymmetric_hebbian):
+        super().__init__(key, NodeType.output)
+        self.is_inhibitory = False
+        self.learning_rule = learning_rule
+
+    def mutate(self):
+        if np.random.random() < LEARNING_RULE_MUTATE_RATE:
+            self.learning_rule = random.choice([rule for rule in LearningRule if rule is not self.learning_rule])
+
+
 class ConnectionGene(object):
     def __init__(self, in_node: int, out_node: int, innovation_number: int):
         self.in_node = in_node
@@ -75,8 +86,8 @@ class Genome(object):
         for input_key in input_keys:
             self.nodes[input_key] = NodeGene(input_key, NodeType.input)
             for output_key in output_keys:
-                if self.nodes[output_key] is None:
-                    self.nodes[output_key] = NodeGene(output_key, NodeType.output)
+                if self.nodes.get(output_key) is None:
+                    self.nodes[output_key] = OutputNodeGene(output_key)
                 if is_initial_genome:
                     self.connections[innovation_number] = ConnectionGene(input_key, output_key, innovation_number)
                     innovation_number += 1
