@@ -7,7 +7,7 @@ from typing import List, Dict, Iterator
 
 from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, ADD_NODE_MUTATE_RATE, \
     CONNECTIONS_DISJOINT_COEFFICIENT, CONNECTIONS_EXCESS_COEFFICIENT, INHIBITORY_MUTATE_RATE, LEARNING_RULE_MUTATE_RATE, \
-    PREDETERMINED_DISABLED_RATE
+    PREDETERMINED_DISABLED_RATE, INITIAL_CONNECTION_RATE
 
 
 class LearningRule(Enum):
@@ -78,19 +78,30 @@ class Genome(object):
         self.nodes = {}
         self.connections = {}
 
-        # Initialize node genes (and connection genes if it's an initial genome) for inputs and outputs.
         input_keys = [i for i in range(input_size)]
         output_keys = [i for i in range(input_size, input_size + output_size)]
-        innovation_number = 0
 
+        # Initialize node genes for inputs and outputs.
+        # TODO: Should probably change this so that all input and output nodes are always inherited.
         for input_key in input_keys:
             self.nodes[input_key] = NodeGene(input_key, NodeType.input)
             for output_key in output_keys:
                 if self.nodes.get(output_key) is None:
                     self.nodes[output_key] = OutputNodeGene(output_key)
-                if is_initial_genome:
-                    self.connections[innovation_number] = ConnectionGene(input_key, output_key, innovation_number)
-                    innovation_number += 1
+
+        # Initialize some connection genes if it is an initial genome.
+        if is_initial_genome:  # Guarantee at least one connection to each output node.
+            for i, output_key in enumerate(output_keys):
+                input_key = random.choice(input_keys)
+                innovation_number = input_key * output_size + i
+                self.connections[innovation_number] = ConnectionGene(input_key, output_key, innovation_number)
+
+            # Add additional initial connections.
+            for input_key in input_keys:
+                for i, output_key in enumerate(output_keys):
+                    innovation_number = input_key * output_size + i
+                    if self.connections.get(innovation_number) is None and random.random() < INITIAL_CONNECTION_RATE:
+                        self.connections[innovation_number] = ConnectionGene(input_key, output_key, innovation_number)
 
     def _mutate_add_connection(self):
         if random.random() < ADD_CONNECTION_MUTATE_RATE:
