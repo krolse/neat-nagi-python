@@ -6,7 +6,8 @@ from itertools import count
 from typing import List, Dict, Iterator
 
 from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, ADD_NODE_MUTATE_RATE, \
-    CONNECTIONS_DISJOINT_COEFFICIENT, CONNECTIONS_EXCESS_COEFFICIENT, INHIBITORY_MUTATE_RATE, LEARNING_RULE_MUTATE_RATE
+    CONNECTIONS_DISJOINT_COEFFICIENT, CONNECTIONS_EXCESS_COEFFICIENT, INHIBITORY_MUTATE_RATE, LEARNING_RULE_MUTATE_RATE, \
+    PREDETERMINED_DISABLED_RATE
 
 
 class LearningRule(Enum):
@@ -124,7 +125,8 @@ class Genome(object):
             connection_parent_2 = other.connections.get(key)
             chosen_parent = random.choice([self, other]) if connection_parent_2 is not None else self
             child.connections[key] = deepcopy(chosen_parent.connections[key])
-            # TODO: Preset chance of disabled connection gene in child if it is disabled in either parent.
+            if self._disabled_connection_gene_in_either_parent(other, key):
+                child.connections[key].enabled = False if random.random() < PREDETERMINED_DISABLED_RATE else True
 
             in_node_key = chosen_parent.connections[key].in_node
             out_node_key = chosen_parent.connections[key].out_node
@@ -132,6 +134,13 @@ class Genome(object):
                 child.nodes[in_node_key] = deepcopy(chosen_parent.nodes[in_node_key])
             if not child.nodes.get(out_node_key):
                 child.nodes[in_node_key] = deepcopy(chosen_parent.nodes[in_node_key])
+
+    def _disabled_connection_gene_in_either_parent(self, other, key):
+        def check_disabled_connection(connection):
+            return connection is not None and not connection.enabled
+
+        connection_1, connection_2 = self.connections.get(key), other.connections.get(key)
+        return check_disabled_connection(connection_1) or check_disabled_connection(connection_2)
 
     def innovation_range(self) -> int:
         return max([key for key in self.connections.keys()])
