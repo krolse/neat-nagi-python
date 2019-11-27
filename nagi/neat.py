@@ -208,12 +208,10 @@ class Population(object):
         # Create initial population.
         for _ in range(population_size):
             genome_id = next(self.genome_id_counter)
-            self.genomes[genome_id] = Genome(genome_id, input_size, output_size, self.innovation_number_counter,
-                                             is_initial_genome=True)
-
+            self.genomes[genome_id] = Genome(genome_id, self._input_size, self._output_size,
+                                             self.innovation_number_counter, is_initial_genome=True)
         # Create initial species.
-        species_id = next(self.species_id_counter)
-        self.species[species_id] = Species(species_id, [genome for genome in self.genomes.values()], self.genomes[0])
+        self.speciate()
 
     def speciate(self):
         # Remove any individuals that didn't make it from the previous generation.
@@ -227,12 +225,15 @@ class Population(object):
 
     def _assign_species(self, unspeciated: List[Genome]):
         for individual in unspeciated:
+            species_assigned = False
             for species in self.species.values():
-                if individual.distance(species.representative) <= SPECIES_COMPATIBILITY_THRESHOLD:
+                if individual.distance(species.representative) < SPECIES_COMPATIBILITY_THRESHOLD:
                     species.members.append(individual)
+                    species_assigned = True
                     break
+            if not species_assigned:
                 new_species_id = next(self.species_id_counter)
-                self.species[new_species_id] = Species(new_species_id, representative=individual)
+                self.species[new_species_id] = Species(new_species_id, members=[individual], representative=individual)
 
     def create_new_offspring(self, parent_1: Genome, parent_2: Genome, fitness_1: float, fitness_2: float):
         if fitness_2 > fitness_1:
