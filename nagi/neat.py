@@ -71,10 +71,10 @@ class ConnectionGene(object):
 
 
 class Genome(object):
-    def __init__(self, key: int, input_size: int, output_size: int, innovation_number: Iterator,
+    def __init__(self, key: int, input_size: int, output_size: int, innovation_number_counter: Iterator,
                  is_initial_genome: bool = False):
         self.key = key
-        self.innovation_number = innovation_number
+        self.innovation_number_counter = innovation_number_counter
         self.nodes = {}
         self.connections = {}
 
@@ -112,7 +112,7 @@ class Genome(object):
                  if (origin_node, destination_node) not in self.connections
                  and destination_node.node_type is not NodeType.input])
 
-            innovation_number = next(self.innovation_number)
+            innovation_number = next(self.innovation_number_counter)
             self.connections[innovation_number] = ConnectionGene(origin_node, destination_node, innovation_number)
 
     def _mutate_add_node(self):
@@ -126,11 +126,11 @@ class Genome(object):
             new_node_gene = HiddenNodeGene(len(self.nodes))
             self.nodes[new_node_gene.key] = new_node_gene
 
-            innovation_number = next(self.innovation_number)
+            innovation_number = next(self.innovation_number_counter)
             connection_to_new_node = ConnectionGene(connection.in_node, new_node_gene.key, innovation_number)
             self.connections[innovation_number] = connection_to_new_node
 
-            innovation_number = next(self.innovation_number)
+            innovation_number = next(self.innovation_number_counter)
             connection_from_new_node = ConnectionGene(new_node_gene.key, connection.out_node, innovation_number)
             self.connections[innovation_number] = connection_from_new_node
 
