@@ -7,7 +7,7 @@ from typing import List, Dict, Iterator
 
 from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, ADD_NODE_MUTATE_RATE, \
     CONNECTIONS_DISJOINT_COEFFICIENT, CONNECTIONS_EXCESS_COEFFICIENT, INHIBITORY_MUTATE_RATE, LEARNING_RULE_MUTATE_RATE, \
-    PREDETERMINED_DISABLED_RATE, INITIAL_CONNECTION_RATE
+    PREDETERMINED_DISABLED_RATE, INITIAL_CONNECTION_RATE, SPECIES_COMPATIBILITY_THRESHOLD
 
 
 class LearningRule(Enum):
@@ -197,8 +197,8 @@ class Species(object):
 
 class Population(object):
     def __init__(self, population_size: int, input_size: int, output_size: int):
-        self.genomes = {}
-        self.species = {}
+        self.genomes: Dict[int, Genome] = {}
+        self.species: Dict[int, Species] = {}
         self.genome_id_counter = count(0)
         self.species_id_counter = count(0)
         self.innovation_number_counter = count(input_size * output_size)
@@ -215,12 +215,24 @@ class Population(object):
         species_id = next(self.species_id_counter)
         self.species[species_id] = Species(species_id, [genome for genome in self.genomes.values()], self.genomes[0])
 
-    def _update_species(self):
+    def speciate(self):
+        # Remove any individuals that didn't make it from the previous generation.
         for species in self.species.values():
             species.members = [member for member in species.members if member in self.genomes.values()]
 
-    # def speciate(self):
-    #     self._update_species()
+        # Assign species to new individuals.
+        unspeciated = [individual for individual in self.genomes.values() if
+                       individual not in [member for spec in self.species.values() for member in spec.members]]
+        self._assign_species(unspeciated)
+
+    def _assign_species(self, unspeciated: List[Genome]):
+        for individual in unspeciated:
+            for species in self.species.values():
+                if individual.distance(species.representative) <= SPECIES_COMPATIBILITY_THRESHOLD:
+                    species.members.append(individual)
+                    break
+                new_species_id = next(self.species_id_counter)
+                self.species[new_species_id] = Species(new_species_id, representative=individual)
 
     def create_new_offspring(self, parent_1: Genome, parent_2: Genome, fitness_1: float, fitness_2: float):
         if fitness_2 > fitness_1:
