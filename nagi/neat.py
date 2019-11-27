@@ -191,6 +191,9 @@ class Species(object):
         self.members = members if members is not None else []
         self.representative = representative
 
+    def add_member(self, specimen: Genome):
+        self.members.append(specimen)
+
     def choose_random_representative(self):
         self.representative = random.choice(self.members)
 
@@ -223,17 +226,21 @@ class Population(object):
                        individual not in [member for spec in self.species.values() for member in spec.members]]
         self._assign_species(unspeciated)
 
+        # Choose random representative for the next generation.
+        for species in self.species.values():
+            species.choose_random_representative()
+
     def _assign_species(self, unspeciated: List[Genome]):
-        for individual in unspeciated:
+        for specimen in unspeciated:
             species_assigned = False
             for species in self.species.values():
-                if individual.distance(species.representative) < SPECIES_COMPATIBILITY_THRESHOLD:
-                    species.members.append(individual)
+                if specimen.distance(species.representative) < SPECIES_COMPATIBILITY_THRESHOLD:
+                    species.add_member(specimen)
                     species_assigned = True
                     break
             if not species_assigned:
                 new_species_id = next(self.species_id_counter)
-                self.species[new_species_id] = Species(new_species_id, members=[individual], representative=individual)
+                self.species[new_species_id] = Species(new_species_id, members=[specimen], representative=specimen)
 
     def create_new_offspring(self, parent_1: Genome, parent_2: Genome, fitness_1: float, fitness_2: float):
         if fitness_2 > fitness_1:
