@@ -59,9 +59,9 @@ class OutputNodeGene(NodeGene):
 
 
 class ConnectionGene(object):
-    def __init__(self, in_node: int, out_node: int, innovation_number: int):
-        self.in_node = in_node
-        self.out_node = out_node
+    def __init__(self, origin_node: int, destination_node: int, innovation_number: int):
+        self.origin_node = origin_node
+        self.destination_node = destination_node
         self.innovation_number = innovation_number
         self.enabled = True
 
@@ -77,6 +77,8 @@ class Genome(object):
         self.innovation_number_counter = innovation_number_counter
         self.nodes = {}
         self.connections = {}
+        self.input_size = input_size
+        self.output_size = output_size
 
         input_keys = [i for i in range(input_size)]
         output_keys = [i for i in range(input_size, input_size + output_size)]
@@ -127,11 +129,11 @@ class Genome(object):
             self.nodes[new_node_gene.key] = new_node_gene
 
             innovation_number = next(self.innovation_number_counter)
-            connection_to_new_node = ConnectionGene(connection.in_node, new_node_gene.key, innovation_number)
+            connection_to_new_node = ConnectionGene(connection.origin_node, new_node_gene.key, innovation_number)
             self.connections[innovation_number] = connection_to_new_node
 
             innovation_number = next(self.innovation_number_counter)
-            connection_from_new_node = ConnectionGene(new_node_gene.key, connection.out_node, innovation_number)
+            connection_from_new_node = ConnectionGene(new_node_gene.key, connection.destination_node, innovation_number)
             self.connections[innovation_number] = connection_from_new_node
 
     def mutate(self):
@@ -150,12 +152,12 @@ class Genome(object):
             if self._disabled_connection_gene_in_either_parent(other, key):
                 child.connections[key].enabled = False if random.random() < PREDETERMINED_DISABLED_RATE else True
 
-            in_node_key = chosen_parent.connections[key].in_node
-            out_node_key = chosen_parent.connections[key].out_node
-            if not child.nodes.get(in_node_key):
-                child.nodes[in_node_key] = deepcopy(chosen_parent.nodes[in_node_key])
-            if not child.nodes.get(out_node_key):
-                child.nodes[in_node_key] = deepcopy(chosen_parent.nodes[in_node_key])
+            origin_node_key = chosen_parent.connections[key].origin_node
+            destination_node_key = chosen_parent.connections[key].destination_node
+            if not child.nodes.get(origin_node_key):
+                child.nodes[origin_node_key] = deepcopy(chosen_parent.nodes[origin_node_key])
+            if not child.nodes.get(destination_node_key):
+                child.nodes[origin_node_key] = deepcopy(chosen_parent.nodes[origin_node_key])
 
     def _disabled_connection_gene_in_either_parent(self, other, key):
         def check_disabled_connection(connection):
