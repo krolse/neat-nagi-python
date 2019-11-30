@@ -1,6 +1,5 @@
 import numpy as np
 from nagi.neat import Genome
-from operator import itemgetter
 
 
 def get_node_coordinates(genome: Genome):

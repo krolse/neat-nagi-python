@@ -207,7 +207,7 @@ class Population(object):
         self.species: Dict[int, Species] = {}
         self.genome_id_counter = count(0)
         self.species_id_counter = count(0)
-        self.innovation_number_counter = count(input_size * output_size)
+        self.innovation_number_counter = count(input_size * output_size + 1)
         self._input_size = input_size
         self._output_size = output_size
 
