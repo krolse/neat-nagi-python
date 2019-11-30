@@ -60,7 +60,7 @@ def get_adjacency_matrix(genome: Genome):
 def set_input_output_layer(layers: np.ndarray, input_size: int, output_size: int):
     max_layer = max(layers) + 1
     for i in range(input_size):
-        layers[i] = 0
+        layers[i] = 1
     for i in range(input_size, input_size + output_size):
         layers[i] = max_layer
     return layers
