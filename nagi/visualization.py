@@ -20,7 +20,8 @@ def get_node_coordinates(genome: Genome):
     _, number_of_nodes_per_layer = np.unique(layers, return_counts=True)
     y = np.array([])
     for number_of_nodes in number_of_nodes_per_layer:
-        y = np.r_[y, layer_y_linspace(0, figure_height, number_of_nodes)]
+        margin = figure_height/(number_of_nodes**1.5)
+        y = np.r_[y, layer_y_linspace(margin, figure_height - margin, number_of_nodes)]
 
     y_coords = {key: y for key, y in zip(sort_by_layers(layers), y)}
     return {key: (x_coord, y_coords[key]) for key, x_coord in zip(sorted(genome.nodes.keys()), x)}

@@ -9,7 +9,9 @@ output_size = 3
 test_genome = Genome(0, input_size, output_size, count(input_size + output_size + 1), is_initial_genome=True)
 for i in range(1, 21):
     plt.subplot(4, 5, i, title=f'Gen {i}', frame_on=False)
-    edges = [(connection.origin_node, connection.destination_node) for connection in test_genome.connections.values()]
+    edges = [(connection.origin_node, connection.destination_node)
+             for connection in test_genome.connections.values()
+             if connection.enabled]
     nodes = [key for key in test_genome.nodes.keys()]
     node_color = ['b' if node < input_size else 'r' if node < input_size+output_size else 'g' for node in nodes]
 
