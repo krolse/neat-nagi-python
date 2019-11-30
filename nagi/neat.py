@@ -2,7 +2,7 @@ import numpy as np
 import random
 from enum import Enum
 from copy import deepcopy
-from itertools import count
+from itertools import count, combinations_with_replacement
 from typing import List, Dict, Iterator
 
 from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, ADD_NODE_MUTATE_RATE, \
@@ -109,9 +109,10 @@ class Genome(object):
         if random.random() < ADD_CONNECTION_MUTATE_RATE:
             (origin_node, destination_node) = random.choice(
                 [(origin_node.key, destination_node.key)
-                 for origin_node in self.nodes.values()
-                 for destination_node in self.nodes.values()
-                 if (origin_node, destination_node) not in self.connections
+                 for (origin_node, destination_node) in combinations_with_replacement(self.nodes.values(), 2)
+                 if (origin_node.key, destination_node.key)
+                 not in [(connection.origin_node, connection.destination_node)
+                         for connection in self.connections.values()]
                  and destination_node.node_type is not NodeType.input])
 
             innovation_number = next(self.innovation_number_counter)
