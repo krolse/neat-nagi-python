@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 import random
 from enum import Enum
@@ -7,7 +9,7 @@ from typing import List, Dict, Iterator
 
 from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, ADD_NODE_MUTATE_RATE, \
     CONNECTIONS_DISJOINT_COEFFICIENT, CONNECTIONS_EXCESS_COEFFICIENT, INHIBITORY_MUTATE_RATE, LEARNING_RULE_MUTATE_RATE, \
-    PREDETERMINED_DISABLED_RATE, INITIAL_CONNECTION_RATE, SPECIES_COMPATIBILITY_THRESHOLD
+    PREDETERMINED_DISABLED_RATE, INITIAL_CONNECTION_RATE, SPECIES_COMPATIBILITY_THRESHOLD, MATING_CUTTOFF_PERCENTAGE
 
 
 class LearningRule(Enum):
@@ -238,9 +240,16 @@ class Population(object):
                        individual not in [member for spec in self.species.values() for member in spec.members]]
         self._assign_species(unspeciated)
 
+        # Remove extinct species:
+        self._remove_excinct_species()
+
         # Choose random representative for the next generation.
         for species in self.species.values():
             species.choose_random_representative()
+
+    def _remove_excinct_species(self):
+        for species_id in [species_id for species_id, species in self.species.items() if not species.members]:
+            self.species.pop(species_id)
 
     def _assign_species(self, unspeciated: List[Genome]):
         for specimen in unspeciated:
@@ -264,12 +273,36 @@ class Population(object):
         parent_1.crossover(parent_2, offspring)
         return offspring
 
+    def next_generation(self, fitnesses: Dict[int, float]):
+        def sample_two_parents(members: List[Genome]):
+            return random.sample(members, 2) if len(members) > 1 else (random.choice(members), random.choice(members))
+
+        assigned_number_of_offspring_per_species = self.assign_number_of_offspring_to_species(fitnesses)
+        new_population_of_genomes = {}
+        for species_id, species in self.species.items():
+            species_size = assigned_number_of_offspring_per_species[species_id]
+            old_members = sorted(species.members, key=lambda x: fitnesses[x.key], reverse=True)
+            # TODO: Add elitism here.
+
+            cutoff = max(int(math.ceil(MATING_CUTTOFF_PERCENTAGE * len(old_members))), 2)
+            old_members = old_members[:cutoff]
+
+            while species_size > 0:
+                species_size -= 1
+                parent_1, parent_2 = sample_two_parents(old_members)
+                offspring = self.create_new_offspring(parent_1, parent_2,
+                                                      fitnesses[parent_1.key],
+                                                      fitnesses[parent_2.key])
+                new_population_of_genomes[offspring.key] = offspring
+        self.genomes = new_population_of_genomes
+        self.speciate()
+
     def assign_number_of_offspring_to_species(self, fitnesses: Dict[int, float]) -> Dict[int, float]:
         total_adjusted_fitness = self._get_total_sum_of_adjusted_fitnesses(fitnesses)
         sum_of_adjusted_fitnesses_by_species = self._get_sum_of_adjusted_fitnesses_by_species(fitnesses)
-        assigned_number_of_offspring = {species_id: round(species_fitness * self._population_size /
-                                                          total_adjusted_fitness)
-                                        for species_id, species_fitness in sum_of_adjusted_fitnesses_by_species.items()}
+        assigned_number_of_offspring = {
+            species_id: max(round(species_fitness * self._population_size / total_adjusted_fitness), 2)
+            for species_id, species_fitness in sum_of_adjusted_fitnesses_by_species.items()}
 
         self._tune_assigned_offspring_to_population_size(assigned_number_of_offspring)
         return assigned_number_of_offspring
@@ -277,11 +310,12 @@ class Population(object):
     def _tune_assigned_offspring_to_population_size(self, assigned_offspring):
         difference = sum(assigned_offspring.values()) - self._population_size
         while difference != 0:
-            species_id = random.choice([key for key in self.species.keys()])
             if difference > 0:
+                species_id = max(assigned_offspring.items(), key=lambda x: x[1])[0]
                 assigned_offspring[species_id] -= 1
                 difference -= 1
             else:
+                species_id = min(assigned_offspring.items(), key=lambda x: x[1])[0]
                 assigned_offspring[species_id] += 1
                 difference += 1
 
@@ -299,4 +333,3 @@ class Population(object):
 
     def _get_total_sum_of_adjusted_fitnesses(self, fitnesses: Dict[int, float]) -> float:
         return sum(self._get_fitness_sharing_adjusted_fitnesses(fitnesses).values())
-
