@@ -209,25 +209,25 @@ class Population(object):
     def __init__(self, population_size: int, input_size: int, output_size: int):
         self.genomes: Dict[int, Genome] = {}
         self.species: Dict[int, Species] = {}
-        self.genome_id_to_species_id: Dict[int, int] = {}
-        self.genome_id_counter = count(0)
-        self.species_id_counter = count(0)
-        self.innovation_number_counter = count(input_size * output_size + 1)
+        self._genome_id_to_species_id: Dict[int, int] = {}
+        self._genome_id_counter = count(0)
+        self._species_id_counter = count(0)
+        self._innovation_number_counter = count(input_size * output_size + 1)
         self._input_size = input_size
         self._output_size = output_size
         self._population_size = population_size
 
         # Create initial population.
         for _ in range(population_size):
-            genome_id = next(self.genome_id_counter)
+            genome_id = next(self._genome_id_counter)
             self.genomes[genome_id] = Genome(genome_id, self._input_size, self._output_size,
-                                             self.innovation_number_counter, is_initial_genome=True)
+                                             self._innovation_number_counter, is_initial_genome=True)
         # Create initial species.
         self.speciate()
 
     def speciate(self):
         # Reset Genome -> Species map.
-        self.genome_id_to_species_id = {}
+        self._genome_id_to_species_id = {}
 
         # Remove any individuals that didn't make it from the previous generation.
         for species in self.species.values():
@@ -249,18 +249,18 @@ class Population(object):
                 if specimen.distance(species.representative) < SPECIES_COMPATIBILITY_THRESHOLD:
                     species.add_member(specimen)
                     species_assigned = True
-                    self.genome_id_to_species_id[specimen.key] = species.key
+                    self._genome_id_to_species_id[specimen.key] = species.key
                     break
             if not species_assigned:
-                new_species_id = next(self.species_id_counter)
+                new_species_id = next(self._species_id_counter)
                 self.species[new_species_id] = Species(new_species_id, members=[specimen], representative=specimen)
-                self.genome_id_to_species_id[specimen.key] = new_species_id
+                self._genome_id_to_species_id[specimen.key] = new_species_id
 
     def create_new_offspring(self, parent_1: Genome, parent_2: Genome, fitness_1: float, fitness_2: float) -> Genome:
         if fitness_2 > fitness_1:
             parent_1, parent_2 = parent_2, parent_1
-        offspring = Genome(next(self.genome_id_counter), self._input_size, self._output_size,
-                           self.innovation_number_counter)
+        offspring = Genome(next(self._genome_id_counter), self._input_size, self._output_size,
+                           self._innovation_number_counter)
         parent_1.crossover(parent_2, offspring)
         return offspring
 
@@ -286,7 +286,7 @@ class Population(object):
                 difference += 1
 
     def _get_species(self, genome_id: int) -> Species:
-        return self.species[self.genome_id_to_species_id[genome_id]]
+        return self.species[self._genome_id_to_species_id[genome_id]]
 
     def _get_fitness_sharing_adjusted_fitnesses(self, fitnesses: Dict[int, float]) -> Dict[int, float]:
         return {genome_id: fitness / len(self._get_species(genome_id)) for genome_id, fitness in fitnesses.items()}
