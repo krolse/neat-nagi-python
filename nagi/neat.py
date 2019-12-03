@@ -9,7 +9,8 @@ from typing import List, Dict, Iterator
 
 from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, ADD_NODE_MUTATE_RATE, \
     CONNECTIONS_DISJOINT_COEFFICIENT, CONNECTIONS_EXCESS_COEFFICIENT, INHIBITORY_MUTATE_RATE, LEARNING_RULE_MUTATE_RATE, \
-    PREDETERMINED_DISABLED_RATE, INITIAL_CONNECTION_RATE, SPECIES_COMPATIBILITY_THRESHOLD, MATING_CUTTOFF_PERCENTAGE
+    PREDETERMINED_DISABLED_RATE, INITIAL_CONNECTION_RATE, SPECIES_COMPATIBILITY_THRESHOLD, MATING_CUTTOFF_PERCENTAGE, \
+    ELITISM
 
 
 class LearningRule(Enum):
@@ -241,13 +242,13 @@ class Population(object):
         self._assign_species(unspeciated)
 
         # Remove extinct species:
-        self._remove_excinct_species()
+        self._remove_extinct_species()
 
         # Choose random representative for the next generation.
         for species in self.species.values():
             species.choose_random_representative()
 
-    def _remove_excinct_species(self):
+    def _remove_extinct_species(self):
         for species_id in [species_id for species_id, species in self.species.items() if not species.members]:
             self.species.pop(species_id)
 
@@ -271,6 +272,7 @@ class Population(object):
         offspring = Genome(next(self._genome_id_counter), self._input_size, self._output_size,
                            self._innovation_number_counter)
         parent_1.crossover(parent_2, offspring)
+        offspring.mutate()
         return offspring
 
     def next_generation(self, fitnesses: Dict[int, float]):
