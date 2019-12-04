@@ -1,29 +1,54 @@
 import numpy as np
 from nagi.neat import Genome
+import networkx as nx
+import matplotlib.pyplot as plt
+
+
+def visualize_genome(genome: Genome):
+    g, nodes, edges = genome_to_graph(genome)
+    pos = get_node_coordinates(genome)
+    labels = {node: f"{node}{'↩' if (node, node) in edges else ''}" for node in nodes}
+    node_color = ['b' if node < genome.input_size else 'r' if node < genome.input_size + genome.output_size else 'g' for
+                  node in nodes]
+
+    nx.draw_networkx(g, pos=pos, with_labels=True, labels=labels, nodes=nodes, node_color=node_color, font_color="w")
+    plt.show()
+
+
+def genome_to_graph(genome: Genome):
+    edges = [(connection.origin_node, connection.destination_node)
+             for connection in genome.connections.values()
+             if connection.enabled]
+    nodes = [key for key in genome.nodes.keys()]
+
+    g = nx.DiGraph()
+    g.add_nodes_from(nodes)
+    g.add_edges_from(edges)
+    return g, nodes, edges
 
 
 def get_node_coordinates(genome: Genome):
-    def layer_y_linspace(start, end, number_of_nodes):
+    def layer_y_linspace(start, end):
         if number_of_nodes == 1:
             return np.mean((start, end))
         else:
             return np.linspace(start, end, number_of_nodes)
 
-    def sort_by_layers(l):
-        keys_with_layers = list(zip(sorted(genome.nodes.keys()), l))
+    def sort_by_layers():
+        keys_with_layers = list(zip(sorted(genome.nodes.keys()), layers))
         return [key for key, _ in sorted(keys_with_layers, key=lambda tup: tup[1])]
 
     figure_width = 10
     figure_height = 5
     layers = get_layers(genome)
-    x = layers/max(layers) * figure_width
+    x = layers / max(layers) * figure_width
     _, number_of_nodes_per_layer = np.unique(layers, return_counts=True)
     y = np.array([])
     for number_of_nodes in number_of_nodes_per_layer:
-        margin = figure_height/(number_of_nodes**1.5)
-        y = np.r_[y, layer_y_linspace(margin, figure_height - margin, number_of_nodes)]
+        margin = figure_height / (number_of_nodes ** 1.5)
+        y = np.r_[y, layer_y_linspace(margin, figure_height - margin)]
 
-    y_coords = {key: y for key, y in zip(sort_by_layers(layers), y)}
+    y_coords = {key: y for key, y in zip(sort_by_layers(), y)}
     return {key: (x_coord, y_coords[key]) for key, x_coord in zip(sorted(genome.nodes.keys()), x)}
 
 
@@ -51,7 +76,7 @@ def get_layers(genome: Genome):
 
 def get_adjacency_matrix(genome: Genome):
     n = len(genome.nodes)
-    node_order_map = {key: i for (i, key) in enumerate(sorted(genome.nodes.keys()))}
+    node_order_map = {key: i for i, key in enumerate(sorted(genome.nodes.keys()))}
     adjacency_matrix = np.zeros((n, n))
     for connection in genome.connections.values():
         adjacency_matrix[node_order_map[connection.origin_node]][node_order_map[connection.destination_node]] = 1
