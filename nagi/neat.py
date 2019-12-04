@@ -229,10 +229,9 @@ class Population(object):
         self.speciate()
 
     def speciate(self):
-        # Reset Genome -> Species map.
-        self._genome_id_to_species_id = {}
-
         # Remove any individuals that didn't make it from the previous generation.
+        self._genome_id_to_species_id = {key: species for key, species in self._genome_id_to_species_id.items() if
+                                         key in self.genomes.keys()}
         for species in self.species.values():
             species.members = [member for member in species.members if member in self.genomes.values()]
 
@@ -285,6 +284,9 @@ class Population(object):
             species_size = assigned_number_of_offspring_per_species[species_id]
             old_members = sorted(species.members, key=lambda x: fitnesses[x.key], reverse=True)
             # TODO: Add elitism here.
+            for genome in old_members[:ELITISM]:
+                new_population_of_genomes[genome.key] = genome
+                species_size -= 1
 
             cutoff = max(int(math.ceil(MATING_CUTTOFF_PERCENTAGE * len(old_members))), 2)
             old_members = old_members[:cutoff]
