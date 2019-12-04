@@ -90,9 +90,8 @@ class Genome(object):
         # TODO: Should probably change this so that all input and output nodes are always inherited.
         for input_key in input_keys:
             self.nodes[input_key] = NodeGene(input_key, NodeType.input)
-            for output_key in output_keys:
-                if self.nodes.get(output_key) is None:
-                    self.nodes[output_key] = OutputNodeGene(output_key)
+        for output_key in output_keys:
+            self.nodes[output_key] = OutputNodeGene(output_key)
 
         # Initialize some connection genes if it is an initial genome.
         if is_initial_genome:
@@ -111,16 +110,17 @@ class Genome(object):
 
     def _mutate_add_connection(self):
         if random.random() < ADD_CONNECTION_MUTATE_RATE:
-            (origin_node, destination_node) = random.choice(
-                [(origin_node.key, destination_node.key)
-                 for (origin_node, destination_node) in combinations_with_replacement(self.nodes.values(), 2)
-                 if (origin_node.key, destination_node.key)
-                 not in [(connection.origin_node, connection.destination_node)
-                         for connection in self.connections.values()]
-                 and destination_node.node_type is not NodeType.input])
-
-            innovation_number = next(self.innovation_number_counter)
-            self.connections[innovation_number] = ConnectionGene(origin_node, destination_node, innovation_number)
+            possible_choices = [(origin_node.key, destination_node.key)
+                                for origin_node in self.nodes.values()
+                                for destination_node in self.nodes.values()
+                                if (origin_node.key, destination_node.key)
+                                not in [(connection.origin_node, connection.destination_node)
+                                        for connection in self.connections.values()]
+                                and destination_node.node_type is not NodeType.input]
+            if possible_choices:
+                (origin_node, destination_node) = random.choice(possible_choices)
+                innovation_number = next(self.innovation_number_counter)
+                self.connections[innovation_number] = ConnectionGene(origin_node, destination_node, innovation_number)
 
     def _mutate_add_node(self):
         if random.random() < ADD_NODE_MUTATE_RATE:
