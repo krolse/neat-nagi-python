@@ -58,7 +58,6 @@ def get_layers(genome: Genome):
     Your layer is max(X)+1
     """
     adjacency_matrix = get_adjacency_matrix(genome)
-    np.fill_diagonal(adjacency_matrix, 0)
     adjacency_matrix[:, genome.input_size: genome.input_size + genome.output_size] = 0
     n_node = np.shape(adjacency_matrix)[0]
     layers = np.zeros(n_node)
@@ -78,9 +77,26 @@ def get_adjacency_matrix(genome: Genome):
     n = len(genome.nodes)
     node_order_map = {key: i for i, key in enumerate(sorted(genome.nodes.keys()))}
     adjacency_matrix = np.zeros((n, n))
+    connections_to_ignore = get_last_connection_in_all_cycles(genome)
     for connection in genome.connections.values():
-        adjacency_matrix[node_order_map[connection.origin_node]][node_order_map[connection.destination_node]] = 1
+        if connection.innovation_number not in connections_to_ignore:
+            adjacency_matrix[node_order_map[connection.origin_node]][node_order_map[connection.destination_node]] = 1
     return adjacency_matrix
+
+
+def get_last_connection_in_all_cycles(genome: Genome):
+    return [max(cycle) for cycle in get_simple_cycles(genome)]
+
+
+def get_simple_cycles(genome: Genome):
+    def cycle_to_list_of_tuples(cycle):
+        cycle.append(cycle[0])
+        return [(cycle[i], cycle[i+1]) for i in range(len(cycle) - 1)]
+
+    edge_to_connection_gene_map = {(connection.origin_node, connection.destination_node): connection for connection in
+                                   genome.connections.values()}
+    simple_cycles = [cycle_to_list_of_tuples(cycle) for cycle in nx.simple_cycles(genome_to_graph(genome)[0])]
+    return [[edge_to_connection_gene_map[edge].innovation_number for edge in cycle] for cycle in simple_cycles]
 
 
 def set_input_output_layer(layers: np.ndarray, input_size: int, output_size: int):
