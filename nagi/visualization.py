@@ -11,7 +11,8 @@ def visualize_genome(genome: Genome):
     node_color = ['b' if node < genome.input_size else 'r' if node < genome.input_size + genome.output_size else 'g' for
                   node in nodes]
 
-    nx.draw_networkx(g, pos=pos, with_labels=True, labels=labels, nodes=nodes, node_color=node_color, font_color="w")
+    nx.draw_networkx(g, pos=pos, with_labels=True, labels=labels, nodes=nodes, node_color=node_color, font_color="w",
+                     connectionstyle="arc3, rad=0.1")
     plt.show()
 
 

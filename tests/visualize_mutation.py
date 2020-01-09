@@ -20,7 +20,8 @@ for i in range(1, 21):
     g.add_edges_from(edges)
     pos = get_node_coordinates(test_genome)
     labels = {node: f"{node}{'↩' if (node, node) in edges else ''}" for node in nodes}
-    nx.draw_networkx(g, pos=pos, with_labels=True, labels=labels, nodes=nodes, node_color=node_color, font_color="w")
+    nx.draw_networkx(g, pos=pos, with_labels=True, labels=labels, nodes=nodes, node_color=node_color, font_color="w",
+                     connectionstyle="arc3, rad=0.1")
     test_genome.mutate()
 
 mng = plt.get_current_fig_manager()
