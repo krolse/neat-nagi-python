@@ -2,6 +2,10 @@ import numpy as np
 from nagi.neat import Genome
 import networkx as nx
 import matplotlib.pyplot as plt
+import sys
+from copy import deepcopy
+
+np.set_printoptions(threshold=sys.maxsize)
 
 
 def visualize_genome(genome: Genome):
@@ -59,9 +63,11 @@ def get_layers(genome: Genome):
     Your layer is max(X)+1
     """
     adjacency_matrix = get_adjacency_matrix(genome)
+    np.fill_diagonal(adjacency_matrix, 0)
     adjacency_matrix[:, genome.input_size: genome.input_size + genome.output_size] = 0
     n_node = np.shape(adjacency_matrix)[0]
     layers = np.zeros(n_node)
+    count = 0
     while True:  # Loop until sorting doesn't help any more
         prev_order = np.copy(layers)
         for curr in range(n_node):
@@ -71,6 +77,13 @@ def get_layers(genome: Genome):
             layers[curr] = np.max(src_layer) + 1
         if all(prev_order == layers):
             break
+        if count > 10000:
+            g = nx.convert_matrix.from_numpy_array(adjacency_matrix, create_using=nx.DiGraph)
+            h = genome_to_graph(genome)[0]
+            print(list(nx.simple_cycles(h)))
+            print(list(nx.simple_cycles(g)))
+            raise Exception("Something went wrong when calculating layers")
+        count += 1
     return set_input_output_layer(layers, genome.input_size, genome.output_size)
 
 
@@ -86,18 +99,18 @@ def get_adjacency_matrix(genome: Genome):
 
 
 def get_last_connection_in_all_cycles(genome: Genome):
-    return [max(cycle) for cycle in get_simple_cycles(genome)]
+    return set([max(cycle) for cycle in get_simple_cycles(genome)])
 
 
 def get_simple_cycles(genome: Genome):
     def cycle_to_list_of_tuples(cycle):
         cycle.append(cycle[0])
-        return [(cycle[i], cycle[i+1]) for i in range(len(cycle) - 1)]
+        return [(cycle[i], cycle[i + 1]) for i in range(len(cycle) - 1)]
 
-    edge_to_connection_gene_map = {(connection.origin_node, connection.destination_node): connection for connection in
-                                   genome.connections.values()}
+    edge_to_innovation_number_map = {(connection.origin_node, connection.destination_node): connection.innovation_number
+                                     for connection in genome.connections.values()}
     simple_cycles = [cycle_to_list_of_tuples(cycle) for cycle in nx.simple_cycles(genome_to_graph(genome)[0])]
-    return [[edge_to_connection_gene_map[edge].innovation_number for edge in cycle] for cycle in simple_cycles]
+    return [[edge_to_innovation_number_map[edge] for edge in cycle] for cycle in simple_cycles]
 
 
 def set_input_output_layer(layers: np.ndarray, input_size: int, output_size: int):
