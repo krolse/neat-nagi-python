@@ -7,9 +7,11 @@ import matplotlib.pyplot as plt
 input_size = 2
 output_size = 3
 test_genome = Genome(0, input_size, output_size, count(input_size + output_size + 1), is_initial_genome=True)
-for i in range(1, 101):
-    if i > 80:
-        plt.subplot(4, 5, i - 80, title=f'Gen {i}', frame_on=False)
+number_of_mutations = 100
+n = max([number_of_mutations, 20])
+for i in range(1, n + 1):
+    if i > n - 20:
+        plt.subplot(4, 5, i - (n - 20), title=f'Gen {i}', frame_on=False)
         edges = [(connection.origin_node, connection.destination_node)
                  for connection in test_genome.connections.values()
                  if connection.enabled]
@@ -26,5 +28,5 @@ for i in range(1, 101):
     test_genome.mutate()
 
 mng = plt.get_current_fig_manager()
-mng.window.state('zoomed')
+# mng.window.state('zoomed')
 plt.show()

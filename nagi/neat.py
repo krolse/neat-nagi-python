@@ -191,6 +191,9 @@ class Genome(object):
         n = max({len(self.connections), len(other.connections)})
         return (CONNECTIONS_DISJOINT_COEFFICIENT * d + CONNECTIONS_EXCESS_COEFFICIENT * e) / n
 
+    def get_enabled_connections(self):
+        return [connection for connection in self.connections.values() if connection.enabled]
+
 
 class Species(object):
     def __init__(self, key: int, members: List[Genome] = None, representative: Genome = None):

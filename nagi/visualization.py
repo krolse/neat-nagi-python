@@ -78,24 +78,28 @@ def get_layers(genome: Genome):
         if all(prev_order == layers):
             break
         if count > 10000:
-            g = nx.convert_matrix.from_numpy_array(adjacency_matrix, create_using=nx.DiGraph)
-            h = genome_to_graph(genome)[0]
-            print(list(nx.simple_cycles(h)))
-            print(list(nx.simple_cycles(g)))
             raise Exception("Something went wrong when calculating layers")
         count += 1
-    return set_input_output_layer(layers, genome.input_size, genome.output_size)
+    set_final_layers(layers, genome.input_size, genome.output_size)
+    return layers
 
 
 def get_adjacency_matrix(genome: Genome):
     n = len(genome.nodes)
     node_order_map = {key: i for i, key in enumerate(sorted(genome.nodes.keys()))}
     adjacency_matrix = np.zeros((n, n))
-    connections_to_ignore = get_last_connection_in_all_cycles(genome)
-    for connection in genome.connections.values():
-        if connection.innovation_number not in connections_to_ignore:
-            adjacency_matrix[node_order_map[connection.origin_node]][node_order_map[connection.destination_node]] = 1
+    genome_copy = deepcopy(genome)
+    connections_to_ignore = get_last_connection_in_all_cycles(genome_copy)
+
+    for connection in connections_to_ignore:
+        genome_copy.connections.pop(connection)
+    for connection in genome_copy.get_enabled_connections():
+        adjacency_matrix[node_order_map[connection.origin_node]][node_order_map[connection.destination_node]] = 1
     return adjacency_matrix
+
+
+def has_any_simple_cycles(genome: Genome):
+    return len(list(nx.simple_cycles(genome_to_graph(genome)[0]))) > 0
 
 
 def get_last_connection_in_all_cycles(genome: Genome):
@@ -113,10 +117,12 @@ def get_simple_cycles(genome: Genome):
     return [[edge_to_innovation_number_map[edge] for edge in cycle] for cycle in simple_cycles]
 
 
-def set_input_output_layer(layers: np.ndarray, input_size: int, output_size: int):
+def set_final_layers(layers: np.ndarray, input_size: int, output_size: int):
     max_layer = max(layers) + 1
     for i in range(input_size):
         layers[i] = 1
     for i in range(input_size, input_size + output_size):
         layers[i] = max_layer
-    return layers
+    for i in range(input_size + output_size, len(layers)):
+        if layers[i] == 1:
+            layers[i] = 2
