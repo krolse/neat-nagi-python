@@ -2,10 +2,7 @@ import numpy as np
 from nagi.neat import Genome
 import networkx as nx
 import matplotlib.pyplot as plt
-import sys
 from copy import deepcopy
-
-np.set_printoptions(threshold=sys.maxsize)
 
 
 def visualize_genome(genome: Genome):
@@ -22,8 +19,7 @@ def visualize_genome(genome: Genome):
 
 def genome_to_graph(genome: Genome):
     edges = [(connection.origin_node, connection.destination_node)
-             for connection in genome.connections.values()
-             if connection.enabled]
+             for connection in genome.get_enabled_connections()]
     nodes = [key for key in genome.nodes.keys()]
 
     g = nx.DiGraph()
@@ -63,11 +59,9 @@ def get_layers(genome: Genome):
     Your layer is max(X)+1
     """
     adjacency_matrix = get_adjacency_matrix(genome)
-    np.fill_diagonal(adjacency_matrix, 0)
     adjacency_matrix[:, genome.input_size: genome.input_size + genome.output_size] = 0
     n_node = np.shape(adjacency_matrix)[0]
     layers = np.zeros(n_node)
-    count = 0
     while True:  # Loop until sorting doesn't help any more
         prev_order = np.copy(layers)
         for curr in range(n_node):
@@ -77,9 +71,6 @@ def get_layers(genome: Genome):
             layers[curr] = np.max(src_layer) + 1
         if all(prev_order == layers):
             break
-        if count > 10000:
-            raise Exception("Something went wrong when calculating layers")
-        count += 1
     set_final_layers(layers, genome.input_size, genome.output_size)
     return layers
 
@@ -119,10 +110,11 @@ def get_simple_cycles(genome: Genome):
 
 def set_final_layers(layers: np.ndarray, input_size: int, output_size: int):
     max_layer = max(layers) + 1
-    for i in range(input_size):
-        layers[i] = 1
-    for i in range(input_size, input_size + output_size):
-        layers[i] = max_layer
-    for i in range(input_size + output_size, len(layers)):
-        if layers[i] == 1:
+    for i in range(len(layers)):
+        if i < input_size:
+            layers[i] = 1
+        elif i < input_size + output_size:
+            layers[i] = max_layer
+        elif layers[i] == 1:
             layers[i] = 2
+
