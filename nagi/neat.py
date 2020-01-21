@@ -191,6 +191,9 @@ class Genome(object):
         n = max({len(self.connections), len(other.connections)})
         return (CONNECTIONS_DISJOINT_COEFFICIENT * d + CONNECTIONS_EXCESS_COEFFICIENT * e) / n
 
+    def get_enabled_connections(self):
+        return [connection for connection in self.connections.values() if connection.enabled]
+
 
 class Species(object):
     def __init__(self, key: int, members: List[Genome] = None, representative: Genome = None):
@@ -301,7 +304,7 @@ class Population(object):
         self.genomes = new_population_of_genomes
         self.speciate()
 
-    def assign_number_of_offspring_to_species(self, fitnesses: Dict[int, float]) -> Dict[int, float]:
+    def assign_number_of_offspring_to_species(self, fitnesses: Dict[int, float]) -> Dict[int, int]:
         total_adjusted_fitness = self._get_total_sum_of_adjusted_fitnesses(fitnesses)
         sum_of_adjusted_fitnesses_by_species = self._get_sum_of_adjusted_fitnesses_by_species(fitnesses)
         assigned_number_of_offspring = {
