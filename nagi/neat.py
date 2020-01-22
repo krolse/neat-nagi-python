@@ -4,13 +4,13 @@ import numpy as np
 import random
 from enum import Enum
 from copy import deepcopy
-from itertools import count, combinations_with_replacement
+from itertools import count
 from typing import List, Dict, Iterator
 
 from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, ADD_NODE_MUTATE_RATE, \
     CONNECTIONS_DISJOINT_COEFFICIENT, CONNECTIONS_EXCESS_COEFFICIENT, INHIBITORY_MUTATE_RATE, LEARNING_RULE_MUTATE_RATE, \
     PREDETERMINED_DISABLED_RATE, INITIAL_CONNECTION_RATE, SPECIES_COMPATIBILITY_THRESHOLD, MATING_CUTTOFF_PERCENTAGE, \
-    ELITISM
+    ELITISM, LEARNING_RULE_DISTRIBUTION_BIAS
 
 
 class LearningRule(Enum):
@@ -34,22 +34,28 @@ class NodeGene(object):
     def mutate(self):
         pass
 
+    def _initialize_learning_rule(self):
+        pass
+
 
 class InputNodeGene(NodeGene):
     def __init__(self, key: int):
         super().__init__(key, NodeType.input)
 
     def mutate(self):
-        super().mutate()
+        pass
+
+    def _initialize_learning_rule(self):
+        pass
 
 
 class HiddenNodeGene(NodeGene):
     # TODO: Should the hidden node gene have a bias, or should the bias be randomly initialized like weights?
-    def __init__(self, key: int, is_inhibitory: bool = False,
-                 learning_rule: LearningRule = LearningRule.asymmetric_hebbian):
+    # TODO: Should the is_inhibitory value be uniformly randomly selected during initialization?
+    def __init__(self, key: int, is_inhibitory: bool = False):
         super().__init__(key, NodeType.hidden)
         self.is_inhibitory = is_inhibitory
-        self.learning_rule = learning_rule
+        self.learning_rule = self._initialize_learning_rule()
 
     def mutate(self):
         if np.random.random() < INHIBITORY_MUTATE_RATE:
@@ -57,16 +63,30 @@ class HiddenNodeGene(NodeGene):
         if np.random.random() < LEARNING_RULE_MUTATE_RATE:
             self.learning_rule = random.choice([rule for rule in LearningRule if rule is not self.learning_rule])
 
+    # TODO: Consider refactoring these, see also for OutPutNodeGene
+    def _initialize_learning_rule(self):
+        less_likely, more_likely = (1 - LEARNING_RULE_DISTRIBUTION_BIAS)/2, LEARNING_RULE_DISTRIBUTION_BIAS/2
+        p = [less_likely, more_likely, less_likely, more_likely] if self.is_inhibitory else \
+            [more_likely, less_likely, more_likely, less_likely]
+
+        return random.choice([learning_rule for learning_rule in LearningRule], p)
+
 
 class OutputNodeGene(NodeGene):
-    def __init__(self, key: int, learning_rule: LearningRule = LearningRule.asymmetric_hebbian):
+    def __init__(self, key: int):
         super().__init__(key, NodeType.output)
         self.is_inhibitory = False
-        self.learning_rule = learning_rule
+        self.learning_rule = self._initialize_learning_rule()
 
     def mutate(self):
         if np.random.random() < LEARNING_RULE_MUTATE_RATE:
             self.learning_rule = random.choice([rule for rule in LearningRule if rule is not self.learning_rule])
+
+    def _initialize_learning_rule(self):
+        less_likely, more_likely = (1 - LEARNING_RULE_DISTRIBUTION_BIAS) / 2, LEARNING_RULE_DISTRIBUTION_BIAS / 2
+        p = [more_likely, less_likely, more_likely, less_likely]
+
+        return random.choice([learning_rule for learning_rule in LearningRule], p)
 
 
 class ConnectionGene(object):
@@ -97,7 +117,7 @@ class Genome(object):
         # Initialize node genes for inputs and outputs.
         # TODO: Should probably change this so that all input and output nodes are always inherited.
         for input_key in input_keys:
-            self.nodes[input_key] = NodeGene(input_key, NodeType.input)
+            self.nodes[input_key] = InputNodeGene(input_key)
         for output_key in output_keys:
             self.nodes[output_key] = OutputNodeGene(output_key)
 
@@ -294,7 +314,7 @@ class Population(object):
         for species_id, species in self.species.items():
             species_size = assigned_number_of_offspring_per_species[species_id]
             old_members = sorted(species.members, key=lambda x: fitnesses[x.key], reverse=True)
-            # TODO: Add elitism here.
+
             for genome in old_members[:ELITISM]:
                 new_population_of_genomes[genome.key] = genome
                 species_size -= 1
