@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import List, Dict
-from nagi.constants import MEMBRANE_POTENTIAL_THRESHOLD, STDP_PARAMS, STDP_LEARNING_WINDOW
+from nagi.constants import MEMBRANE_POTENTIAL_THRESHOLD, STDP_PARAMS, STDP_LEARNING_WINDOW, NEURON_WEIGHT_BUDGET
 from nagi.neat import Genome, NodeType
 from nagi.stdp import *
 
@@ -32,6 +32,7 @@ class SpikingNeuron(object):
         self.c = c
         self.d = d
         self.inputs = inputs
+        self.normalize_weights()
         self.learning_rule = learning_rule
 
         self.membrane_potential = self.c
@@ -130,6 +131,13 @@ class SpikingNeuron(object):
             self.inputs[key] += sigma * delta_weight * (w_max - weight)
         elif delta_weight < 0:
             self.inputs[key] += sigma * delta_weight * (weight - abs(w_min))
+
+        self.normalize_weights()
+
+    def normalize_weights(self):
+        sum_of_input_weights = sum(self.inputs.values())
+        if sum_of_input_weights > NEURON_WEIGHT_BUDGET:
+            self.inputs = {key: value*NEURON_WEIGHT_BUDGET/sum_of_input_weights for key, value in self.inputs.items()}
 
 
 class SpikingNeuralNetwork(object):

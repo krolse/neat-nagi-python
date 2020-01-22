@@ -1,5 +1,6 @@
 TIME_STEP_IN_MSEC = 0.05
 MEMBRANE_POTENTIAL_THRESHOLD = 30.0
+MEMBRANE_THETA_INCREMENT = 5.0
 
 REGULAR_SPIKING_PARAMS = {'a': 0.02, 'b': 0.20, 'c': -65.0, 'd': 8.00}
 INTRINSICALLY_BURSTING_PARAMS = {'a': 0.02, 'b': 0.20, 'c': -55.0, 'd': 4.00}
@@ -12,6 +13,8 @@ LOW_THRESHOLD_SPIKING_PARAMS = {'a': 0.02, 'b': 0.25, 'c': -65.0, 'd': 2.00}
 # STDP
 ASYMMETRIC_HEBBIAN_PARAMS = {'a_plus': 1, 'a_minus': 1, 'tau_plus': 10, 'tau_minus': 10}
 SYMMETRIC_HEBBIAN_PARAMS = {'a': 0.78, 'std': 37}
+NEURON_WEIGHT_BUDGET = 1.0
+
 # SYMMETRIC_ANTI_HEBBIAN_PARAMS = {'a': 20, 'mean': 0, 'std': 10}
 STDP_PARAMS = {'sigma': 0.1, 'w_max': 1, 'w_min': 0}
 STDP_LEARNING_WINDOW = 40.0
