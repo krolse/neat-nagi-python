@@ -35,6 +35,14 @@ class NodeGene(object):
         pass
 
 
+class InputNodeGene(NodeGene):
+    def __init__(self, key: int):
+        super().__init__(key, NodeType.input)
+
+    def mutate(self):
+        super().mutate()
+
+
 class HiddenNodeGene(NodeGene):
     # TODO: Should the hidden node gene have a bias, or should the bias be randomly initialized like weights?
     def __init__(self, key: int, is_inhibitory: bool = False,

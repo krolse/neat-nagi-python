@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import List, Dict
 from nagi.constants import MEMBRANE_POTENTIAL_THRESHOLD, STDP_PARAMS, STDP_LEARNING_WINDOW
+from nagi.neat import Genome, NodeType
 from nagi.stdp import *
 
 
@@ -190,3 +191,18 @@ class SpikingNeuralNetwork(object):
         """Resets all state variables in all neurons in the entire neural network."""
         for neuron in self.neurons.values():
             neuron.reset()
+
+    @staticmethod
+    def create(genome: Genome, bias: float, a: float, b: float, c: float, d: float):
+        node_inputs = {key: [] for key in genome.nodes.keys()}
+        input_keys = [node.key for node in genome.nodes.values() if node.node_type is NodeType.input]
+        output_keys = [node.key for node in genome.nodes.values() if node.node_type is NodeType.output]
+
+        for connection_gene in genome.get_enabled_connections():
+            node_inputs[connection_gene.destination_node].append(connection_gene.origin_node)
+
+        neurons = {key: SpikingNeuron(bias, a, b, c, d, inputs, genome.nodes[key].learning_rule)
+                   for key, inputs in node_inputs.items()}
+
+        return SpikingNeuralNetwork(neurons, input_keys, output_keys)
+
