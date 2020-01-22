@@ -1,6 +1,8 @@
+import math
 from enum import Enum
 from typing import List, Dict
-from nagi.constants import MEMBRANE_POTENTIAL_THRESHOLD, STDP_PARAMS, STDP_LEARNING_WINDOW, NEURON_WEIGHT_BUDGET
+from nagi.constants import MEMBRANE_POTENTIAL_THRESHOLD, STDP_PARAMS, STDP_LEARNING_WINDOW, NEURON_WEIGHT_BUDGET, \
+    THRESHOLD_THETA_INCREMENT
 from nagi.neat import Genome, NodeType
 from nagi.stdp import *
 
@@ -32,13 +34,14 @@ class SpikingNeuron(object):
         self.c = c
         self.d = d
         self.inputs = inputs
-        self.normalize_weights()
+        self._normalize_weights()
         self.learning_rule = learning_rule
 
         self.membrane_potential = self.c
         self.membrane_recovery = self.b * self.membrane_potential
         self.fired = 0
         self.current = self.bias
+        self.threshold_theta = 0
 
         # Variables containing time elapsed since last input and output spikes.
         self.output_spike_timing: float = 0
@@ -77,12 +80,13 @@ class SpikingNeuron(object):
             self.input_spike_timings[key] = [t + dt for t in self.input_spike_timings[key] if
                                              t + dt < STDP_LEARNING_WINDOW]
 
-        if self.membrane_potential > MEMBRANE_POTENTIAL_THRESHOLD:
+        if self.membrane_potential > MEMBRANE_POTENTIAL_THRESHOLD + self._decayed_threshold_theta():
             self.fired = 1
             self.has_fired = True
-            self.output_spike_timing = 0
             self.membrane_potential = self.c
             self.membrane_recovery += self.d
+            self.threshold_theta = self._decayed_threshold_theta() + THRESHOLD_THETA_INCREMENT
+            self.output_spike_timing = 0
 
             # STDP on output spike.
             for key in self.input_spike_timings.keys():
@@ -132,12 +136,15 @@ class SpikingNeuron(object):
         elif delta_weight < 0:
             self.inputs[key] += sigma * delta_weight * (weight - abs(w_min))
 
-        self.normalize_weights()
+        self._normalize_weights()
 
-    def normalize_weights(self):
+    def _normalize_weights(self):
         sum_of_input_weights = sum(self.inputs.values())
         if sum_of_input_weights > NEURON_WEIGHT_BUDGET:
             self.inputs = {key: value*NEURON_WEIGHT_BUDGET/sum_of_input_weights for key, value in self.inputs.items()}
+
+    def _decayed_threshold_theta(self):
+        return self.threshold_theta*math.exp(self.output_spike_timing)
 
 
 class SpikingNeuralNetwork(object):
