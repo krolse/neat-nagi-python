@@ -2,7 +2,7 @@ import math
 from enum import Enum
 from typing import List, Dict
 from nagi.constants import MEMBRANE_POTENTIAL_THRESHOLD, STDP_PARAMS, STDP_LEARNING_WINDOW, NEURON_WEIGHT_BUDGET, \
-    THRESHOLD_THETA_INCREMENT
+    THRESHOLD_THETA_INCREMENT, DECAY_CONSTANT
 from nagi.neat import Genome, NodeType
 from nagi.stdp import *
 
@@ -141,10 +141,11 @@ class SpikingNeuron(object):
     def _normalize_weights(self):
         sum_of_input_weights = sum(self.inputs.values())
         if sum_of_input_weights > NEURON_WEIGHT_BUDGET:
-            self.inputs = {key: value*NEURON_WEIGHT_BUDGET/sum_of_input_weights for key, value in self.inputs.items()}
+            self.inputs = {key: value * NEURON_WEIGHT_BUDGET / sum_of_input_weights for key, value in
+                           self.inputs.items()}
 
     def _decayed_threshold_theta(self):
-        return self.threshold_theta*math.exp(self.output_spike_timing)
+        return self.threshold_theta * math.exp(- DECAY_CONSTANT * self.output_spike_timing)
 
 
 class SpikingNeuralNetwork(object):
@@ -220,4 +221,3 @@ class SpikingNeuralNetwork(object):
                    for key, inputs in node_inputs.items()}
 
         return SpikingNeuralNetwork(neurons, input_keys, output_keys)
-
