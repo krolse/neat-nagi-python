@@ -1,4 +1,3 @@
-import math
 from math import exp
 
 from nagi.constants import ASYMMETRIC_HEBBIAN_PARAMS, SYMMETRIC_HEBBIAN_PARAMS
@@ -43,7 +42,7 @@ def asymmetric_anti_hebbian(delta_t: float, a_plus: float, a_minus: float, b_plu
 
 def symmetric_hebbian(delta_t: float, a_plus: float, a_minus: float, b_plus: float, b_minus: float):
     def gaussian(a: float, std: float):
-        return a * math.exp(-0.5 * (delta_t / std) ** 2)
+        return a * exp(-0.5 * (delta_t / std) ** 2)
 
     a_plus, a_minus = max(a_plus, a_minus), min(a_plus, a_minus)
     b_plus, b_minus = min(b_plus, b_minus), max(b_plus, b_minus)
