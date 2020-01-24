@@ -15,8 +15,8 @@ RESONATOR_PARAMS = {'a': 0.10, 'b': 0.25, 'c': -65.0, 'd': 2.00}
 LOW_THRESHOLD_SPIKING_PARAMS = {'a': 0.02, 'b': 0.25, 'c': -65.0, 'd': 2.00}
 
 # STDP
-ASYMMETRIC_HEBBIAN_PARAMS = {'a_plus': 1, 'a_minus': 1, 'tau_plus': 10, 'tau_minus': 10}
-SYMMETRIC_HEBBIAN_PARAMS = {'a': 0.78, 'std': 37}
+ASYMMETRIC_HEBBIAN_PARAMS = {'a_plus': 1, 'a_minus': 1, 'b_plus': 10, 'b_minus': 10}
+SYMMETRIC_HEBBIAN_PARAMS = {'a_plus': 0.8, 'a_minus': 0.2, 'b_plus': 10, 'b_minus': 40}
 NEURON_WEIGHT_BUDGET = 1.0
 
 # SYMMETRIC_ANTI_HEBBIAN_PARAMS = {'a': 20, 'mean': 0, 'std': 10}
