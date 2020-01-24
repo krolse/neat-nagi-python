@@ -89,10 +89,6 @@ def get_adjacency_matrix(genome: Genome):
     return adjacency_matrix
 
 
-def has_any_simple_cycles(genome: Genome):
-    return len(list(nx.simple_cycles(genome_to_graph(genome)[0]))) > 0
-
-
 def get_last_connection_in_all_cycles(genome: Genome):
     return set([max(cycle) for cycle in get_simple_cycles(genome)])
 

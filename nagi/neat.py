@@ -69,7 +69,7 @@ class HiddenNodeGene(NodeGene):
         p = [less_likely, more_likely, less_likely, more_likely] if self.is_inhibitory else \
             [more_likely, less_likely, more_likely, less_likely]
 
-        return random.choice([learning_rule for learning_rule in LearningRule], p)
+        return np.random.choice([learning_rule for learning_rule in LearningRule], p=p)
 
 
 class OutputNodeGene(NodeGene):
@@ -85,8 +85,7 @@ class OutputNodeGene(NodeGene):
     def _initialize_learning_rule(self):
         less_likely, more_likely = (1 - LEARNING_RULE_DISTRIBUTION_BIAS) / 2, LEARNING_RULE_DISTRIBUTION_BIAS / 2
         p = [more_likely, less_likely, more_likely, less_likely]
-
-        return random.choice([learning_rule for learning_rule in LearningRule], p)
+        return np.random.choice([learning_rule for learning_rule in LearningRule], p=p)
 
 
 class ConnectionGene(object):

@@ -30,5 +30,5 @@ for i in range(1, n + 1):
     test_genome.mutate()
 
 mng = plt.get_current_fig_manager()
-mng.window.state('zoomed')
+# mng.window.state('zoomed')
 plt.show()
