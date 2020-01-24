@@ -2,7 +2,7 @@ import math
 from enum import Enum
 from typing import List, Dict
 from nagi.constants import MEMBRANE_POTENTIAL_THRESHOLD, STDP_PARAMS, STDP_LEARNING_WINDOW, NEURON_WEIGHT_BUDGET, \
-    THRESHOLD_THETA_INCREMENT, DECAY_CONSTANT
+    THRESHOLD_THETA_INCREMENT_RATE, THRESHOLD_THETA_DECAY_RATE, MAX_THRESHOLD_THETA
 from nagi.neat import Genome, NodeType
 from nagi.stdp import *
 
@@ -80,17 +80,20 @@ class SpikingNeuron(object):
             self.input_spike_timings[key] = [t + dt for t in self.input_spike_timings[key] if
                                              t + dt < STDP_LEARNING_WINDOW]
 
-        if self.membrane_potential > MEMBRANE_POTENTIAL_THRESHOLD + self._decayed_threshold_theta():
+        if self.membrane_potential > MEMBRANE_POTENTIAL_THRESHOLD + self.threshold_theta:
             self.fired = 1
             self.has_fired = True
             self.membrane_potential = self.c
             self.membrane_recovery += self.d
-            self.threshold_theta = self._decayed_threshold_theta() + THRESHOLD_THETA_INCREMENT
+            self.threshold_theta *= THRESHOLD_THETA_INCREMENT_RATE * ((MAX_THRESHOLD_THETA - self.threshold_theta) /
+                                                                      MAX_THRESHOLD_THETA)
             self.output_spike_timing = 0
 
             # STDP on output spike.
             for key in self.input_spike_timings.keys():
                 self.stpd_update(key, StdpType.output)
+        else:
+            self.threshold_theta *= THRESHOLD_THETA_DECAY_RATE
 
     def reset(self):
         """ Resets all state variables."""
@@ -143,9 +146,6 @@ class SpikingNeuron(object):
         if sum_of_input_weights > NEURON_WEIGHT_BUDGET:
             self.inputs = {key: value * NEURON_WEIGHT_BUDGET / sum_of_input_weights for key, value in
                            self.inputs.items()}
-
-    def _decayed_threshold_theta(self):
-        return self.threshold_theta * math.exp(- DECAY_CONSTANT * self.output_spike_timing)
 
 
 class SpikingNeuralNetwork(object):
