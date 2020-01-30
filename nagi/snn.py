@@ -1,4 +1,3 @@
-import math
 from enum import Enum
 from typing import List, Dict
 from nagi.constants import MEMBRANE_POTENTIAL_THRESHOLD, STDP_PARAMS, STDP_LEARNING_WINDOW, NEURON_WEIGHT_BUDGET, \
