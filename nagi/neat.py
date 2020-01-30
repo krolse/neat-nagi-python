@@ -1,5 +1,3 @@
-import math
-
 import numpy as np
 import random
 from enum import Enum
@@ -315,7 +313,7 @@ class Population(object):
                 new_population_of_genomes[genome.key] = genome
                 species_size -= 1
 
-            cutoff = max(int(math.ceil(MATING_CUTTOFF_PERCENTAGE * len(old_members))), 2)
+            cutoff = max(int(np.ceil(MATING_CUTTOFF_PERCENTAGE * len(old_members))), 2)
             old_members = old_members[:cutoff]
 
             while species_size > 0:
