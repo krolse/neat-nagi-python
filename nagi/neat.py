@@ -100,7 +100,7 @@ class Genome(object):
                  is_initial_genome: bool = False):
         self.key = key
         self.innovation_number_counter = innovation_number_counter
-        self.nodes = {}
+        self.nodes: Dict[int, NodeGene] = {}
         self.connections = {}
         self.input_size = input_size
         self.output_size = output_size
