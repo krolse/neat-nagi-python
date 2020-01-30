@@ -6,6 +6,7 @@ from enum import Enum
 from copy import deepcopy
 from itertools import count
 from typing import List, Dict, Iterator
+from abc import ABC, abstractmethod
 
 from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, ADD_NODE_MUTATE_RATE, \
     CONNECTIONS_DISJOINT_COEFFICIENT, CONNECTIONS_EXCESS_COEFFICIENT, INHIBITORY_MUTATE_RATE, LEARNING_RULE_MUTATE_RATE, \
@@ -26,7 +27,7 @@ class NodeType(Enum):
     hidden = 3
 
 
-class NodeGene(object):
+class NodeGene(ABC):
     def __init__(self, key: int, node_type: NodeType):
         self.key = key
         self.node_type = node_type
@@ -34,8 +35,24 @@ class NodeGene(object):
     def mutate(self):
         pass
 
+
+class LearningNodeGene(NodeGene):
+    @abstractmethod
+    def __init__(self, key: int, node_type: NodeType, is_inhibitory: bool):
+        super().__init__(key, node_type)
+        self.is_inhibitory = is_inhibitory
+        self.learning_rule = self._initialize_learning_rule()
+
     def _initialize_learning_rule(self):
-        pass
+        def get_learning_rule_probability_distribution() -> List[float]:
+            less_likely =  (1 - LEARNING_RULE_DISTRIBUTION_BIAS) / 2
+            more_likely = LEARNING_RULE_DISTRIBUTION_BIAS / 2
+            inhibitory_probabilities = [less_likely, more_likely, less_likely, more_likely]
+            excitatory_probabilities = [more_likely, less_likely, more_likely, less_likely]
+            return inhibitory_probabilities if self.is_inhibitory else excitatory_probabilities
+
+        p = get_learning_rule_probability_distribution()
+        return np.random.choice([learning_rule for learning_rule in LearningRule], p=p)
 
 
 class InputNodeGene(NodeGene):
@@ -45,17 +62,12 @@ class InputNodeGene(NodeGene):
     def mutate(self):
         pass
 
-    def _initialize_learning_rule(self):
-        pass
 
-
-class HiddenNodeGene(NodeGene):
+class HiddenNodeGene(LearningNodeGene):
     # TODO: Should the hidden node gene have a bias, or should the bias be randomly initialized like weights?
     # TODO: Should the is_inhibitory value be uniformly randomly selected during initialization?
     def __init__(self, key: int, is_inhibitory: bool = False):
-        super().__init__(key, NodeType.hidden)
-        self.is_inhibitory = is_inhibitory
-        self.learning_rule = self._initialize_learning_rule()
+        super().__init__(key, NodeType.hidden, is_inhibitory)
 
     def mutate(self):
         if np.random.random() < INHIBITORY_MUTATE_RATE:
@@ -63,29 +75,14 @@ class HiddenNodeGene(NodeGene):
         if np.random.random() < LEARNING_RULE_MUTATE_RATE:
             self.learning_rule = random.choice([rule for rule in LearningRule if rule is not self.learning_rule])
 
-    # TODO: Consider refactoring these, see also for OutPutNodeGene
-    def _initialize_learning_rule(self):
-        less_likely, more_likely = (1 - LEARNING_RULE_DISTRIBUTION_BIAS)/2, LEARNING_RULE_DISTRIBUTION_BIAS/2
-        p = [less_likely, more_likely, less_likely, more_likely] if self.is_inhibitory else \
-            [more_likely, less_likely, more_likely, less_likely]
 
-        return np.random.choice([learning_rule for learning_rule in LearningRule], p=p)
-
-
-class OutputNodeGene(NodeGene):
+class OutputNodeGene(LearningNodeGene):
     def __init__(self, key: int):
-        super().__init__(key, NodeType.output)
-        self.is_inhibitory = False
-        self.learning_rule = self._initialize_learning_rule()
+        super().__init__(key, NodeType.output, is_inhibitory=False)
 
     def mutate(self):
         if np.random.random() < LEARNING_RULE_MUTATE_RATE:
             self.learning_rule = random.choice([rule for rule in LearningRule if rule is not self.learning_rule])
-
-    def _initialize_learning_rule(self):
-        less_likely, more_likely = (1 - LEARNING_RULE_DISTRIBUTION_BIAS) / 2, LEARNING_RULE_DISTRIBUTION_BIAS / 2
-        p = [more_likely, less_likely, more_likely, less_likely]
-        return np.random.choice([learning_rule for learning_rule in LearningRule], p=p)
 
 
 class ConnectionGene(object):
