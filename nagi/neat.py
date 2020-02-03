@@ -7,10 +7,11 @@ from typing import List, Dict, Iterator
 from abc import ABC, abstractmethod
 
 from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, ADD_NODE_MUTATE_RATE, \
-    CONNECTIONS_DISJOINT_COEFFICIENT, CONNECTIONS_EXCESS_COEFFICIENT, INHIBITORY_MUTATE_RATE, LEARNING_RULE_MUTATE_RATE, \
-    PREDETERMINED_DISABLED_RATE, INITIAL_CONNECTION_RATE, SPECIES_COMPATIBILITY_THRESHOLD, MATING_CUTTOFF_PERCENTAGE, \
-    ELITISM, LEARNING_RULE_DISTRIBUTION_BIAS, STDP_A_INIT_SCALE, STDP_B_INIT_SCALE, STDP_PARAMETERS_MUTATE_RATE, \
-    STDP_A_MUTATE_SCALE, STDP_B_MUTATE_SCALE, STDP_PARAMETERS_REINIT_RATE
+    CONNECTIONS_DISJOINT_COEFFICIENT, CONNECTIONS_EXCESS_COEFFICIENT, INHIBITORY_MUTATE_RATE, \
+    LEARNING_RULE_MUTATE_RATE, PREDETERMINED_DISABLED_RATE, INITIAL_CONNECTION_RATE, SPECIES_COMPATIBILITY_THRESHOLD, \
+    MATING_CUTTOFF_PERCENTAGE, ELITISM, STDP_A_INIT_SCALE, STDP_B_INIT_SCALE, STDP_PARAMETERS_MUTATE_RATE, \
+    STDP_A_MUTATE_SCALE, STDP_B_MUTATE_SCALE, STDP_PARAMETERS_REINIT_RATE, INHIBITORY_PROBABILITIES, \
+    EXCITATORY_PROBABILITIES
 
 
 class LearningRule(Enum):
@@ -43,18 +44,11 @@ class LearningNodeGene(NodeGene):
         self.learning_rule = self._initialize_learning_rule()
         self.stdp_parameters = self._initialize_stdp_parameters()
 
-    def _initialize_learning_rule(self):
-        def get_learning_rule_probability_distribution() -> List[float]:
-            less_likely = (1 - LEARNING_RULE_DISTRIBUTION_BIAS) / 2
-            more_likely = LEARNING_RULE_DISTRIBUTION_BIAS / 2
-            inhibitory_probabilities = [less_likely, more_likely, less_likely, more_likely]
-            excitatory_probabilities = [more_likely, less_likely, more_likely, less_likely]
-            return inhibitory_probabilities if self.is_inhibitory else excitatory_probabilities
-
-        p = get_learning_rule_probability_distribution()
+    def _initialize_learning_rule(self) -> LearningRule:
+        p = INHIBITORY_PROBABILITIES if self.is_inhibitory else EXCITATORY_PROBABILITIES
         return np.random.choice([learning_rule for learning_rule in LearningRule], p=p)
 
-    def _initialize_stdp_parameters(self):
+    def _initialize_stdp_parameters(self) -> Dict[str, float]:
         a_plus, a_minus = (np.random.random() * STDP_A_INIT_SCALE for _ in range(2))
         b_plus, b_minus = (np.random.random() * STDP_B_INIT_SCALE for _ in range(2))
         if self._has_symmetric_learning_rule():
@@ -77,7 +71,7 @@ class LearningNodeGene(NodeGene):
         elif r < STDP_PARAMETERS_MUTATE_RATE + STDP_PARAMETERS_REINIT_RATE:
             self.stdp_parameters = self._initialize_stdp_parameters()
 
-    def _has_symmetric_learning_rule(self):
+    def _has_symmetric_learning_rule(self) -> bool:
         return self.learning_rule is LearningRule.symmetric_hebbian or self.learning_rule is LearningRule.symmetric_anti_hebbian
 
 
