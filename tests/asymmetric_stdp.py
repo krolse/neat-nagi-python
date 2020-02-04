@@ -8,7 +8,7 @@ def plot_stdp(f):
     p = ASYMMETRIC_HEBBIAN_PARAMS
 
     x = [i for i in range(-40, 41)]
-    y = [f(dt, p['a_plus'], p['a_minus'], p['tau_plus'], p['tau_minus']) for dt in range(-40, 41)]
+    y = [f(dt, p['a_plus'], p['a_minus'], p['b_plus'], p['b_minus']) for dt in range(-40, 41)]
 
     fig = plt.figure()
     plt.ylabel("delta_w")
