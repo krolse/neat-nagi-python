@@ -1,8 +1,10 @@
+from itertools import count
+
+import matplotlib.pyplot as plt
+import networkx as nx
+
 from nagi.neat import Genome
 from nagi.visualization import get_node_coordinates
-import networkx as nx
-from itertools import count
-import matplotlib.pyplot as plt
 
 input_size = 2
 output_size = 3

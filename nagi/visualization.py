@@ -1,8 +1,10 @@
-import numpy as np
-from nagi.neat import Genome
-import networkx as nx
-import matplotlib.pyplot as plt
 from copy import deepcopy
+
+import matplotlib.pyplot as plt
+import networkx as nx
+import numpy as np
+
+from nagi.neat import Genome
 
 
 def visualize_genome(genome: Genome):

@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from matplotlib.ticker import PercentFormatter
-from nagi.constants import SYMMETRIC_HEBBIAN_PARAMS
+
 from nagi.stdp import *
 
 

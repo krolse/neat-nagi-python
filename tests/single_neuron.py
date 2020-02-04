@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+
 from nagi import snn, constants
 from nagi.constants import ASYMMETRIC_HEBBIAN_PARAMS
 from nagi.neat import LearningRule

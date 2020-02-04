@@ -1,10 +1,11 @@
-import numpy as np
 import random
-from enum import Enum
+from abc import ABC, abstractmethod
 from copy import deepcopy
+from enum import Enum
 from itertools import count
 from typing import List, Dict, Iterator
-from abc import ABC, abstractmethod
+
+import numpy as np
 
 from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, ADD_NODE_MUTATE_RATE, \
     CONNECTIONS_DISJOINT_COEFFICIENT, CONNECTIONS_EXCESS_COEFFICIENT, INHIBITORY_MUTATE_RATE, \

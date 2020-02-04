@@ -1,5 +1,6 @@
-from nagi.neat import Population
 import random
+
+from nagi.neat import Population
 from nagi.visualization import visualize_genome
 
 pop = Population(100, 3, 2)

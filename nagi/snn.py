@@ -1,6 +1,8 @@
-import numpy as np
 from enum import Enum
 from typing import List, Dict
+
+import numpy as np
+
 from nagi.constants import MEMBRANE_POTENTIAL_THRESHOLD, STDP_PARAMS, STDP_LEARNING_WINDOW, NEURON_WEIGHT_BUDGET, \
     THRESHOLD_THETA_INCREMENT_RATE, THRESHOLD_THETA_DECAY_RATE, MAX_THRESHOLD_THETA
 from nagi.neat import Genome, NodeType, LearningNodeGene
