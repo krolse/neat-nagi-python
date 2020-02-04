@@ -1,8 +1,9 @@
+import numpy as np
 from enum import Enum
 from typing import List, Dict
 from nagi.constants import MEMBRANE_POTENTIAL_THRESHOLD, STDP_PARAMS, STDP_LEARNING_WINDOW, NEURON_WEIGHT_BUDGET, \
     THRESHOLD_THETA_INCREMENT_RATE, THRESHOLD_THETA_DECAY_RATE, MAX_THRESHOLD_THETA
-from nagi.neat import Genome, NodeType
+from nagi.neat import Genome, NodeType, LearningNodeGene
 from nagi.stdp import *
 
 
@@ -14,8 +15,8 @@ class StdpType(Enum):
 class SpikingNeuron(object):
     """Class representing a single spiking neuron."""
 
-    def __init__(self, bias: float, a: float, b: float, c: float, d: float, inputs: Dict[int, float],
-                 learning_rule: LearningRule):
+    def __init__(self, bias: float, a: float, b: float, c: float, d: float, inputs: List[int],
+                 learning_rule: LearningRule, learning_rule_parameters: Dict[str, float]):
         """
         a, b, c, and d are the parameters of the Izhikevich model.
 
@@ -32,9 +33,10 @@ class SpikingNeuron(object):
         self.b = b
         self.c = c
         self.d = d
-        self.inputs = inputs
+        self.inputs = {key: np.random.random() for key in inputs}
         self._normalize_weights()
         self.learning_rule = learning_rule
+        self.learning_rule_parameters = learning_rule_parameters
 
         self.membrane_potential = self.c
         self.membrane_recovery = self.b * self.membrane_potential
@@ -107,7 +109,7 @@ class SpikingNeuron(object):
         self.input_spike_timings = {key: 0 for key in self.inputs.keys()}
 
     def apply_learning_rule(self, delta_t: float):
-        return get_learning_rule_function(self.learning_rule)(delta_t, **get_learning_rule_params(self.learning_rule))
+        return get_learning_rule_function(self.learning_rule)(delta_t, **self.learning_rule_parameters)
 
     def stpd_update(self, key: int, stdp_type: StdpType):
         """
@@ -209,14 +211,16 @@ class SpikingNeuralNetwork(object):
 
     @staticmethod
     def create(genome: Genome, bias: float, a: float, b: float, c: float, d: float):
-        node_inputs = {key: [] for key in genome.nodes.keys()}
+        learning_nodes = {key: node for key, node in genome.nodes.items() if isinstance(node, LearningNodeGene)}
+        node_inputs = {key: [] for key in learning_nodes.keys()}
         input_keys = [node.key for node in genome.nodes.values() if node.node_type is NodeType.input]
         output_keys = [node.key for node in genome.nodes.values() if node.node_type is NodeType.output]
 
         for connection_gene in genome.get_enabled_connections():
             node_inputs[connection_gene.destination_node].append(connection_gene.origin_node)
 
-        neurons = {key: SpikingNeuron(bias, a, b, c, d, inputs, genome.nodes[key].learning_rule)
+        neurons = {key: SpikingNeuron(bias, a, b, c, d, inputs, learning_nodes[key].learning_rule,
+                                      learning_nodes[key].stdp_parameters)
                    for key, inputs in node_inputs.items()}
 
         return SpikingNeuralNetwork(neurons, input_keys, output_keys)

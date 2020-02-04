@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from nagi import snn, constants
-from nagi.constants import TIME_STEP_IN_MSEC
+from nagi.constants import TIME_STEP_IN_MSEC, SYMMETRIC_HEBBIAN_PARAMS, ASYMMETRIC_HEBBIAN_PARAMS
 from nagi.neat import LearningRule
 
 
@@ -58,13 +58,17 @@ def plot_spikes(spikes, title):
 
 
 def show(title, learning_rule, a, b, c, d):
-    neuron = snn.SpikingNeuron(5, a, b, c, d, {0: 0.5}, learning_rule)
+    if learning_rule is LearningRule.symmetric_hebbian or learning_rule is LearningRule.symmetric_anti_hebbian:
+        params = SYMMETRIC_HEBBIAN_PARAMS
+    else:
+        params = ASYMMETRIC_HEBBIAN_PARAMS
+    neuron = snn.SpikingNeuron(5, a, b, c, d, [0], learning_rule, params)
     network = snn.SpikingNeuralNetwork({1: neuron}, [0], [1])
     spike_train = []
     for i in range(5000):
         network.set_inputs([40 if i % 50 == 0 else 0])
-        spike_train.append((TIME_STEP_IN_MSEC * i, neuron.current, neuron.membrane_potential, neuron.membrane_recovery, neuron.fired,
-                            neuron.inputs[0]))
+        spike_train.append((TIME_STEP_IN_MSEC * i, neuron.current, neuron.membrane_potential, neuron.membrane_recovery,
+                            neuron.fired, neuron.inputs[0]))
         network.advance(TIME_STEP_IN_MSEC)
 
     plot_spikes(spike_train, title)
