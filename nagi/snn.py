@@ -16,7 +16,7 @@ class SpikingNeuron(object):
     """Class representing a single spiking neuron."""
 
     def __init__(self, bias: float, a: float, b: float, c: float, d: float, inputs: List[int],
-                 learning_rule: LearningRule, learning_rule_parameters: Dict[str, float]):
+                 learning_rule: LearningRule, stdp_parameters: Dict[str, float]):
         """
         a, b, c, and d are the parameters of the Izhikevich model.
 
@@ -36,7 +36,7 @@ class SpikingNeuron(object):
         self.inputs = {key: np.random.random() for key in inputs}
         self._normalize_weights()
         self.learning_rule = learning_rule
-        self.learning_rule_parameters = learning_rule_parameters
+        self.stdp_parameters = stdp_parameters
 
         self.membrane_potential = self.c
         self.membrane_recovery = self.b * self.membrane_potential
@@ -109,7 +109,7 @@ class SpikingNeuron(object):
         self.input_spike_timings = {key: 0 for key in self.inputs.keys()}
 
     def apply_learning_rule(self, delta_t: float):
-        return get_learning_rule_function(self.learning_rule)(delta_t, **self.learning_rule_parameters)
+        return get_learning_rule_function(self.learning_rule)(delta_t, **self.stdp_parameters)
 
     def stpd_update(self, key: int, stdp_type: StdpType):
         """
