@@ -87,8 +87,8 @@ class InputNodeGene(NodeGene):
 class HiddenNodeGene(LearningNodeGene):
     # TODO: Should the hidden node gene have a bias, or should the bias be randomly initialized like weights?
     # TODO: Should the is_inhibitory value be uniformly randomly selected during initialization?
-    def __init__(self, key: int, is_inhibitory: bool = False):
-        super().__init__(key, NodeType.hidden, is_inhibitory)
+    def __init__(self, key: int):
+        super().__init__(key, NodeType.hidden, random.choice([True, False]))
 
     def mutate(self):
         if np.random.random() < INHIBITORY_MUTATE_RATE:
