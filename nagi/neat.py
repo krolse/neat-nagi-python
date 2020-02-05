@@ -16,10 +16,10 @@ from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, ADD_N
 
 
 class LearningRule(Enum):
-    asymmetric_hebbian = 1
-    asymmetric_anti_hebbian = 2
-    symmetric_hebbian = 3
-    symmetric_anti_hebbian = 4
+    asymmetric_hebbian = 'AH'
+    asymmetric_anti_hebbian = 'AA'
+    symmetric_hebbian = 'SH'
+    symmetric_anti_hebbian = 'SA'
 
 
 class NodeType(Enum):

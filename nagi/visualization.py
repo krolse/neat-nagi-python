@@ -4,18 +4,25 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 
-from nagi.neat import Genome
+from nagi.constants import RED, BLUE, GREEN
+from nagi.neat import Genome, LearningNodeGene
 
 
-def visualize_genome(genome: Genome):
+def visualize_genome(genome: Genome, show_learning_rules: bool = True):
     g, nodes, edges = genome_to_graph(genome)
     pos = get_node_coordinates(genome)
-    labels = {node: f"{node}{'↩' if (node, node) in edges else ''}" for node in nodes}
-    node_color = ['b' if node < genome.input_size else 'r' if node < genome.input_size + genome.output_size else 'g' for
-                  node in nodes]
 
-    nx.draw_networkx(g, pos=pos, with_labels=True, labels=labels, nodes=nodes, node_color=node_color, font_color="w",
-                     connectionstyle="arc3, rad=0.1")
+    labels = {
+        key: f"{node.learning_rule.value if isinstance(node, LearningNodeGene) else key}{'↩' if (key, key) in edges else ''}"
+        for key, node in genome.nodes.items()} if show_learning_rules \
+        else {node: f"{node}{'↩' if (node, node) in edges else ''}" for node in nodes}
+
+    node_color = [RED if node < genome.input_size else
+                  GREEN if node < genome.input_size + genome.output_size else
+                  BLUE for node in nodes]
+
+    nx.draw_networkx(g, pos=pos, with_labels=True, labels=labels, nodes=nodes, node_color=node_color, node_size=400,
+                     font_size=10, connectionstyle="arc3, rad=0.1")
     plt.show()
 
 
@@ -115,4 +122,3 @@ def set_final_layers(layers: np.ndarray, input_size: int, output_size: int):
             layers[i] = max_layer
         elif layers[i] == 1:
             layers[i] = 2
-
