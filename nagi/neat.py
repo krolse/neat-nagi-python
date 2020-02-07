@@ -63,33 +63,45 @@ class NeuralNodeGene(NodeGene):
 
     def _initialize_stdp_parameters(self) -> Dict[str, float]:
         if self.learning_rule.is_symmetric():
-            a_plus = np.random.uniform(*SYMMETRIC_A_PLUS_INIT_RANGE)
-            a_minus = np.random.uniform(*SYMMETRIC_A_MINUS_INIT_RANGE)
-            b_plus, b_minus = np.random.uniform(*SYMMETRIC_STD_INIT_RANGE, 2)
-            if b_plus > b_minus:
-                b_plus, b_minus = b_minus, b_plus
+            return NeuralNodeGene._initialize_symmetric_stdp_parameters()
         else:
-            a_plus, a_minus = np.random.uniform(*ASYMMETRIC_A_INIT_RANGE, 2)
-            b_plus, b_minus = np.random.uniform(*ASYMMETRIC_TAU_INIT_RANGE, 2)
-        return {'a_plus': a_plus, 'a_minus': a_minus, 'b_plus': b_minus, 'b_minus': b_minus}
+            return NeuralNodeGene._initialize_asymmetric_stdp_parameters()
 
     def _mutate_stdp_parameters(self):
         if self.learning_rule.is_symmetric():
-            a_plus = np.clip(self.stdp_parameters['a_plus'] + np.random.normal(0, SYMMETRIC_A_PLUS_MUTATE_SCALE),
-                             *SYMMETRIC_A_PLUS_INIT_RANGE)
-            a_minus = np.clip(self.stdp_parameters['a_plus'] + np.random.normal(0, SYMMETRIC_A_MINUS_MUTATE_SCALE),
-                              *SYMMETRIC_A_MINUS_INIT_RANGE)
-            b_plus, b_minus = (np.clip(self.stdp_parameters[key] + np.random.normal(0, SYMMETRIC_STD_MUTATE_SCALE),
-                                       *SYMMETRIC_STD_INIT_RANGE) for key in ('b_plus', 'b_minus'))
-            if b_plus > b_minus:
-                b_plus, b_minus = b_minus, b_plus
+            self._mutate_symmetric_stdp_parameters()
         else:
-            a_plus, a_minus = (np.clip(self.stdp_parameters[key] + np.random.normal(0, ASYMMETRIC_A_MUTATE_SCALE),
-                                       *ASYMMETRIC_A_INIT_RANGE) for key in ('a_plus', 'a_minus'))
-            b_plus, b_minus = (np.clip(self.stdp_parameters[key] + np.random.normal(0, ASYMMETRIC_TAU_MUTATE_SCALE),
-                                       *ASYMMETRIC_TAU_INIT_RANGE) for key in ('b_plus', 'b_minus'))
+            self._mutate_asymmetric_stdp_parameters()
 
-        self.stdp_parameters = {'a_plus': a_plus, 'a_minus': a_minus, 'b_plus': b_minus, 'b_minus': b_minus}
+    @staticmethod
+    def _initialize_symmetric_stdp_parameters():
+        a_plus = np.random.uniform(*SYMMETRIC_A_PLUS_INIT_RANGE)
+        a_minus = np.random.uniform(*SYMMETRIC_A_MINUS_INIT_RANGE)
+        std_plus, std_minus = sorted(np.random.uniform(*SYMMETRIC_STD_INIT_RANGE, 2))
+        return {'a_plus': a_plus, 'a_minus': a_minus, 'std_plus': std_minus, 'std_minus': std_minus}
+
+    @staticmethod
+    def _initialize_asymmetric_stdp_parameters():
+        a_plus, a_minus = np.random.uniform(*ASYMMETRIC_A_INIT_RANGE, 2)
+        tau_plus, tau_minus = np.random.uniform(*ASYMMETRIC_TAU_INIT_RANGE, 2)
+        return {'a_plus': a_plus, 'a_minus': a_minus, 'tau_plus': tau_plus, 'tau_minus': tau_minus}
+
+    def _mutate_symmetric_stdp_parameters(self):
+        a_plus = np.clip(self.stdp_parameters['a_plus'] + np.random.normal(0, SYMMETRIC_A_PLUS_MUTATE_SCALE),
+                         *SYMMETRIC_A_PLUS_INIT_RANGE)
+        a_minus = np.clip(self.stdp_parameters['a_plus'] + np.random.normal(0, SYMMETRIC_A_MINUS_MUTATE_SCALE),
+                          *SYMMETRIC_A_MINUS_INIT_RANGE)
+        std_plus, std_minus = sorted(
+            (np.clip(self.stdp_parameters[key] + np.random.normal(0, SYMMETRIC_STD_MUTATE_SCALE),
+                     *SYMMETRIC_STD_INIT_RANGE) for key in ('std_plus', 'std_minus')))
+        self.stdp_parameters = {'a_plus': a_plus, 'a_minus': a_minus, 'std_plus': std_plus, 'std_minus': std_minus}
+
+    def _mutate_asymmetric_stdp_parameters(self):
+        a_plus, a_minus = (np.clip(self.stdp_parameters[key] + np.random.normal(0, ASYMMETRIC_A_MUTATE_SCALE),
+                                   *ASYMMETRIC_A_INIT_RANGE) for key in ('a_plus', 'a_minus'))
+        tau_plus, tau_minus = (np.clip(self.stdp_parameters[key] + np.random.normal(0, ASYMMETRIC_TAU_MUTATE_SCALE),
+                                       *ASYMMETRIC_TAU_INIT_RANGE) for key in ('tau_plus', 'tau_minus'))
+        self.stdp_parameters = {'a_plus': a_plus, 'a_minus': a_minus, 'tau_plus': tau_plus, 'tau_minus': tau_minus}
 
 
 class InputNodeGene(NodeGene):
