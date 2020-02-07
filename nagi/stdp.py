@@ -17,9 +17,11 @@ def asymmetric_hebbian(delta_t: float, a_plus: float, a_minus: float, b_plus: fl
     """
 
     if delta_t > 0:
-        return -a_plus * exp(-delta_t / b_plus)
+        return a_plus * exp(-delta_t / b_plus)
+    elif delta_t < 0:
+        return -a_minus * exp(delta_t / b_minus)
     else:
-        return a_minus * exp(delta_t / b_minus)
+        return 0
 
 
 def asymmetric_anti_hebbian(delta_t: float, a_plus: float, a_minus: float, b_plus: float, b_minus: float) -> float:
@@ -34,17 +36,13 @@ def asymmetric_anti_hebbian(delta_t: float, a_plus: float, a_minus: float, b_plu
     :return: Weight modification in decimal percentage.
     """
 
-    if delta_t > 0:
-        return a_plus * exp(-delta_t / b_plus)
-    else:
-        return -a_minus * exp(delta_t / b_minus)
+    return -asymmetric_hebbian(delta_t, a_plus, a_minus, b_plus, b_minus)
 
 
 def symmetric_hebbian(delta_t: float, a_plus: float, a_minus: float, b_plus: float, b_minus: float):
     def gaussian(std: float):
         return exp(-0.5 * (delta_t / std) ** 2) / (std * sqrt(2 * pi))
 
-    b_plus, b_minus = min(b_plus, b_minus), max(b_plus, b_minus)
     difference_of_gaussian = gaussian(b_plus) - gaussian(b_minus)
     return (a_plus if difference_of_gaussian > 0 else a_minus) * difference_of_gaussian
 
