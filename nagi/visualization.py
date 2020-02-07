@@ -17,12 +17,12 @@ def visualize_genome(genome: Genome, show_learning_rules: bool = True):
         for key, node in genome.nodes.items()} if show_learning_rules \
         else {node: f"{node}{'↩' if (node, node) in edges else ''}" for node in nodes}
 
-    node_color = [RED if node < genome.input_size else
-                  GREEN if node < genome.input_size + genome.output_size else
+    node_color = [GREEN if node < genome.input_size else
+                  RED if genome.nodes[node].is_inhibitory else
                   BLUE for node in nodes]
 
     nx.draw_networkx(g, pos=pos, with_labels=True, labels=labels, nodes=nodes, node_color=node_color, node_size=400,
-                     font_size=10, connectionstyle="arc3, rad=0.1")
+                     font_size=10, connectionstyle="arc3, rad=0.05")
     plt.show()
 
 

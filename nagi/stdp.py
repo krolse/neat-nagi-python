@@ -1,4 +1,4 @@
-from math import exp
+from math import exp, sqrt, pi
 
 from nagi.constants import ASYMMETRIC_HEBBIAN_PARAMS, SYMMETRIC_HEBBIAN_PARAMS
 from nagi.neat import LearningRule
@@ -41,13 +41,12 @@ def asymmetric_anti_hebbian(delta_t: float, a_plus: float, a_minus: float, b_plu
 
 
 def symmetric_hebbian(delta_t: float, a_plus: float, a_minus: float, b_plus: float, b_minus: float):
-    def gaussian(a: float, std: float):
-        return a * exp(-0.5 * (delta_t / std) ** 2)
+    def gaussian(std: float):
+        return exp(-0.5 * (delta_t / std) ** 2) / (std * sqrt(2 * pi))
 
-    a_plus, a_minus = max(a_plus, a_minus), min(a_plus, a_minus)
     b_plus, b_minus = min(b_plus, b_minus), max(b_plus, b_minus)
-
-    return gaussian(a_plus, b_plus) - gaussian(a_minus, b_minus)
+    difference_of_gaussian = gaussian(b_plus) - gaussian(b_minus)
+    return (a_plus if difference_of_gaussian > 0 else a_minus) * difference_of_gaussian
 
 
 def symmetric_anti_hebbian(delta_t: float, a_plus: float, a_minus: float, b_plus: float, b_minus: float):

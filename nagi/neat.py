@@ -10,9 +10,10 @@ import numpy as np
 from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, ADD_NODE_MUTATE_RATE, \
     CONNECTIONS_DISJOINT_COEFFICIENT, CONNECTIONS_EXCESS_COEFFICIENT, INHIBITORY_MUTATE_RATE, \
     LEARNING_RULE_MUTATE_RATE, PREDETERMINED_DISABLED_RATE, INITIAL_CONNECTION_RATE, SPECIES_COMPATIBILITY_THRESHOLD, \
-    MATING_CUTTOFF_PERCENTAGE, ELITISM, STDP_A_INIT_SCALE, STDP_B_INIT_SCALE, STDP_PARAMETERS_MUTATE_RATE, \
-    STDP_A_MUTATE_SCALE, STDP_B_MUTATE_SCALE, STDP_PARAMETERS_REINIT_RATE, INHIBITORY_PROBABILITIES, \
-    EXCITATORY_PROBABILITIES
+    MATING_CUTTOFF_PERCENTAGE, ELITISM, STDP_PARAMETERS_MUTATE_RATE, STDP_PARAMETERS_REINIT_RATE, \
+    INHIBITORY_PROBABILITIES, EXCITATORY_PROBABILITIES, SYMMETRIC_A_PLUS_INIT_RANGE, SYMMETRIC_A_MINUS_INIT_RANGE, \
+    SYMMETRIC_STD_INIT_RANGE, ASYMMETRIC_A_INIT_RANGE, ASYMMETRIC_TAU_INIT_RANGE, SYMMETRIC_A_PLUS_MUTATE_SCALE, \
+    SYMMETRIC_A_MINUS_MUTATE_SCALE, SYMMETRIC_STD_MUTATE_SCALE, ASYMMETRIC_A_MUTATE_SCALE, ASYMMETRIC_TAU_MUTATE_SCALE
 
 
 class LearningRule(Enum):
@@ -20,6 +21,9 @@ class LearningRule(Enum):
     asymmetric_anti_hebbian = 'AA'
     symmetric_hebbian = 'SH'
     symmetric_anti_hebbian = 'SA'
+
+    def is_symmetric(self) -> bool:
+        return self is LearningRule.symmetric_hebbian or self is LearningRule.symmetric_anti_hebbian
 
 
 class NodeType(Enum):
@@ -45,35 +49,54 @@ class LearningNodeGene(NodeGene):
         self.learning_rule = self._initialize_learning_rule()
         self.stdp_parameters = self._initialize_stdp_parameters()
 
+    @abstractmethod
+    def mutate(self):
+        if np.random.random() < LEARNING_RULE_MUTATE_RATE:
+            previous_learning_rule = self.learning_rule
+            self.learning_rule = random.choice([rule for rule in LearningRule if rule is not self.learning_rule])
+            if previous_learning_rule.is_symmetric() ^ self.learning_rule.is_symmetric():
+                self.stdp_parameters = self._initialize_stdp_parameters()
+                return
+
+        r = np.random.random()
+        if r < STDP_PARAMETERS_MUTATE_RATE:
+            self._mutate_stdp_parameters()
+        elif r < STDP_PARAMETERS_MUTATE_RATE + STDP_PARAMETERS_REINIT_RATE:
+            self.stdp_parameters = self._initialize_stdp_parameters()
+
     def _initialize_learning_rule(self) -> LearningRule:
         p = INHIBITORY_PROBABILITIES if self.is_inhibitory else EXCITATORY_PROBABILITIES
         return np.random.choice([learning_rule for learning_rule in LearningRule], p=p)
 
     def _initialize_stdp_parameters(self) -> Dict[str, float]:
-        a_plus, a_minus = (np.random.random() * STDP_A_INIT_SCALE for _ in range(2))
-        b_plus, b_minus = (np.random.random() * STDP_B_INIT_SCALE for _ in range(2))
-        if self._has_symmetric_learning_rule():
-            a_plus, a_minus = max(a_plus, a_minus), min(a_plus, a_minus)
-            b_plus, b_minus = min(b_plus, b_minus), max(b_plus, b_minus)
+        if self.learning_rule.is_symmetric():
+            a_plus = np.random.uniform(*SYMMETRIC_A_PLUS_INIT_RANGE)
+            a_minus = np.random.uniform(*SYMMETRIC_A_MINUS_INIT_RANGE)
+            b_plus, b_minus = np.random.uniform(*SYMMETRIC_STD_INIT_RANGE, 2)
+            if b_plus > b_minus:
+                b_plus, b_minus = b_minus, b_plus
+        else:
+            a_plus, a_minus = np.random.uniform(*ASYMMETRIC_A_INIT_RANGE, 2)
+            b_plus, b_minus = np.random.uniform(*ASYMMETRIC_TAU_INIT_RANGE, 2)
         return {'a_plus': a_plus, 'a_minus': a_minus, 'b_plus': b_minus, 'b_minus': b_minus}
 
     def _mutate_stdp_parameters(self):
-        r = np.random.random()
-        if r < STDP_PARAMETERS_MUTATE_RATE:
-            a_plus, a_minus = (np.clip(self.stdp_parameters[key] + np.random.normal(0, STDP_A_MUTATE_SCALE),
-                                       0, STDP_A_INIT_SCALE) for key in ('a_plus', 'a_minus'))
-            b_plus, b_minus = (np.clip(self.stdp_parameters[key] + np.random.normal(0, STDP_B_MUTATE_SCALE),
-                                       0, STDP_A_INIT_SCALE) for key in ('b_plus', 'b_minus'))
-            if self._has_symmetric_learning_rule():
-                a_plus, a_minus = max(a_plus, a_minus), min(a_plus, a_minus)
-                b_plus, b_minus = min(b_plus, b_minus), max(b_plus, b_minus)
-            self.stdp_parameters = {'a_plus': a_plus, 'a_minus': a_minus, 'b_plus': b_minus, 'b_minus': b_minus}
+        if self.learning_rule.is_symmetric():
+            a_plus = np.clip(self.stdp_parameters['a_plus'] + np.random.normal(0, SYMMETRIC_A_PLUS_MUTATE_SCALE),
+                             *SYMMETRIC_A_PLUS_INIT_RANGE)
+            a_minus = np.clip(self.stdp_parameters['a_plus'] + np.random.normal(0, SYMMETRIC_A_MINUS_MUTATE_SCALE),
+                              *SYMMETRIC_A_MINUS_INIT_RANGE)
+            b_plus, b_minus = (np.clip(self.stdp_parameters[key] + np.random.normal(0, SYMMETRIC_STD_MUTATE_SCALE),
+                                       *SYMMETRIC_STD_INIT_RANGE) for key in ('b_plus', 'b_minus'))
+            if b_plus > b_minus:
+                b_plus, b_minus = b_minus, b_plus
+        else:
+            a_plus, a_minus = (np.clip(self.stdp_parameters[key] + np.random.normal(0, ASYMMETRIC_A_MUTATE_SCALE),
+                                       *ASYMMETRIC_A_INIT_RANGE) for key in ('a_plus', 'a_minus'))
+            b_plus, b_minus = (np.clip(self.stdp_parameters[key] + np.random.normal(0, ASYMMETRIC_TAU_MUTATE_SCALE),
+                                       *ASYMMETRIC_TAU_INIT_RANGE) for key in ('b_plus', 'b_minus'))
 
-        elif r < STDP_PARAMETERS_MUTATE_RATE + STDP_PARAMETERS_REINIT_RATE:
-            self.stdp_parameters = self._initialize_stdp_parameters()
-
-    def _has_symmetric_learning_rule(self) -> bool:
-        return self.learning_rule is LearningRule.symmetric_hebbian or self.learning_rule is LearningRule.symmetric_anti_hebbian
+        self.stdp_parameters = {'a_plus': a_plus, 'a_minus': a_minus, 'b_plus': b_minus, 'b_minus': b_minus}
 
 
 class InputNodeGene(NodeGene):
@@ -87,15 +110,13 @@ class InputNodeGene(NodeGene):
 class HiddenNodeGene(LearningNodeGene):
     # TODO: Should the hidden node gene have a bias, or should the bias be randomly initialized like weights?
     # TODO: Should the is_inhibitory value be uniformly randomly selected during initialization?
-    def __init__(self, key: int, is_inhibitory: bool = False):
-        super().__init__(key, NodeType.hidden, is_inhibitory)
+    def __init__(self, key: int):
+        super().__init__(key, NodeType.hidden, is_inhibitory=random.choice([True, False]))
 
     def mutate(self):
         if np.random.random() < INHIBITORY_MUTATE_RATE:
             self.is_inhibitory = not self.is_inhibitory
-        if np.random.random() < LEARNING_RULE_MUTATE_RATE:
-            self.learning_rule = random.choice([rule for rule in LearningRule if rule is not self.learning_rule])
-        self._mutate_stdp_parameters()
+        super().mutate()
 
 
 class OutputNodeGene(LearningNodeGene):
@@ -103,9 +124,7 @@ class OutputNodeGene(LearningNodeGene):
         super().__init__(key, NodeType.output, is_inhibitory=False)
 
     def mutate(self):
-        if np.random.random() < LEARNING_RULE_MUTATE_RATE:
-            self.learning_rule = random.choice([rule for rule in LearningRule if rule is not self.learning_rule])
-        self._mutate_stdp_parameters()
+        super().mutate()
 
 
 class ConnectionGene(object):
