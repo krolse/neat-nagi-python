@@ -26,25 +26,18 @@ class LearningRule(Enum):
         return self is LearningRule.symmetric_hebbian or self is LearningRule.symmetric_anti_hebbian
 
 
-class NodeType(Enum):
-    input = 1
-    output = 2
-    hidden = 3
-
-
 class NodeGene(ABC):
-    def __init__(self, key: int, node_type: NodeType):
+    def __init__(self, key: int):
         self.key = key
-        self.node_type = node_type
 
     def mutate(self):
         pass
 
 
-class LearningNodeGene(NodeGene):
+class NeuralNodeGene(NodeGene):
     @abstractmethod
-    def __init__(self, key: int, node_type: NodeType, is_inhibitory: bool):
-        super().__init__(key, node_type)
+    def __init__(self, key: int, is_inhibitory: bool):
+        super().__init__(key)
         self.is_inhibitory = is_inhibitory
         self.learning_rule = self._initialize_learning_rule()
         self.stdp_parameters = self._initialize_stdp_parameters()
@@ -101,17 +94,15 @@ class LearningNodeGene(NodeGene):
 
 class InputNodeGene(NodeGene):
     def __init__(self, key: int):
-        super().__init__(key, NodeType.input)
+        super().__init__(key)
 
     def mutate(self):
         pass
 
 
-class HiddenNodeGene(LearningNodeGene):
-    # TODO: Should the hidden node gene have a bias, or should the bias be randomly initialized like weights?
-    # TODO: Should the is_inhibitory value be uniformly randomly selected during initialization?
+class HiddenNodeGene(NeuralNodeGene):
     def __init__(self, key: int):
-        super().__init__(key, NodeType.hidden, is_inhibitory=random.choice([True, False]))
+        super().__init__(key, is_inhibitory=random.choice((True, False)))
 
     def mutate(self):
         if np.random.random() < INHIBITORY_MUTATE_RATE:
@@ -119,9 +110,9 @@ class HiddenNodeGene(LearningNodeGene):
         super().mutate()
 
 
-class OutputNodeGene(LearningNodeGene):
+class OutputNodeGene(NeuralNodeGene):
     def __init__(self, key: int):
-        super().__init__(key, NodeType.output, is_inhibitory=False)
+        super().__init__(key, is_inhibitory=False)
 
     def mutate(self):
         super().mutate()
@@ -182,7 +173,7 @@ class Genome(object):
                                 if (origin_node.key, destination_node.key)
                                 not in [(connection.origin_node, connection.destination_node)
                                         for connection in self.connections.values()]
-                                and destination_node.node_type is not NodeType.input]
+                                and not isinstance(destination_node, InputNodeGene)]
             if possible_choices:
                 (origin_node, destination_node) = random.choice(possible_choices)
                 innovation_number = next(self.innovation_number_counter)

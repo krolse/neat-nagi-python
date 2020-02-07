@@ -5,7 +5,7 @@ import numpy as np
 
 from nagi.constants import MEMBRANE_POTENTIAL_THRESHOLD, STDP_PARAMS, STDP_LEARNING_WINDOW, NEURON_WEIGHT_BUDGET, \
     THRESHOLD_THETA_INCREMENT_RATE, THRESHOLD_THETA_DECAY_RATE, MAX_THRESHOLD_THETA
-from nagi.neat import Genome, NodeType, LearningNodeGene
+from nagi.neat import Genome, NeuralNodeGene, InputNodeGene, OutputNodeGene
 from nagi.stdp import *
 
 
@@ -213,10 +213,10 @@ class SpikingNeuralNetwork(object):
 
     @staticmethod
     def create(genome: Genome, bias: float, a: float, b: float, c: float, d: float):
-        learning_nodes = {key: node for key, node in genome.nodes.items() if isinstance(node, LearningNodeGene)}
+        learning_nodes = {key: node for key, node in genome.nodes.items() if isinstance(node, NeuralNodeGene)}
         node_inputs = {key: [] for key in learning_nodes.keys()}
-        input_keys = [node.key for node in genome.nodes.values() if node.node_type is NodeType.input]
-        output_keys = [node.key for node in genome.nodes.values() if node.node_type is NodeType.output]
+        input_keys = [node.key for node in genome.nodes.values() if isinstance(node, InputNodeGene)]
+        output_keys = [node.key for node in genome.nodes.values() if isinstance(node, OutputNodeGene)]
 
         for connection_gene in genome.get_enabled_connections():
             node_inputs[connection_gene.destination_node].append(connection_gene.origin_node)

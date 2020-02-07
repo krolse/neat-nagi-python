@@ -5,7 +5,7 @@ import networkx as nx
 import numpy as np
 
 from nagi.constants import RED, BLUE, GREEN
-from nagi.neat import Genome, LearningNodeGene
+from nagi.neat import Genome, NeuralNodeGene
 
 
 def visualize_genome(genome: Genome, show_learning_rules: bool = True):
@@ -13,7 +13,7 @@ def visualize_genome(genome: Genome, show_learning_rules: bool = True):
     pos = get_node_coordinates(genome)
 
     labels = {
-        key: f"{node.learning_rule.value if isinstance(node, LearningNodeGene) else key}{'↩' if (key, key) in edges else ''}"
+        key: f"{node.learning_rule.value if isinstance(node, NeuralNodeGene) else key}{'↩' if (key, key) in edges else ''}"
         for key, node in genome.nodes.items()} if show_learning_rules \
         else {node: f"{node}{'↩' if (node, node) in edges else ''}" for node in nodes}
 
