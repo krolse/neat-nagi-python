@@ -96,7 +96,7 @@ class SpikingNeuron(object):
             for key in self.input_spike_timings.keys():
                 self.stpd_update(key, StdpType.output)
         else:
-            self.threshold_theta *= THRESHOLD_THETA_DECAY_RATE
+            self.threshold_theta *= (1 - THRESHOLD_THETA_DECAY_RATE)
 
     def reset(self):
         """ Resets all state variables."""
