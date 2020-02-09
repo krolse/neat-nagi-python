@@ -14,7 +14,7 @@ from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, ADD_N
     INHIBITORY_PROBABILITIES, EXCITATORY_PROBABILITIES, SYMMETRIC_A_PLUS_INIT_RANGE, SYMMETRIC_A_MINUS_INIT_RANGE, \
     SYMMETRIC_STD_INIT_RANGE, ASYMMETRIC_A_INIT_RANGE, ASYMMETRIC_TAU_INIT_RANGE, SYMMETRIC_A_PLUS_MUTATE_SCALE, \
     SYMMETRIC_A_MINUS_MUTATE_SCALE, SYMMETRIC_STD_MUTATE_SCALE, ASYMMETRIC_A_MUTATE_SCALE, ASYMMETRIC_TAU_MUTATE_SCALE, \
-    SPECIES_PROTECTION_LIMIT
+    SPECIES_PROTECTION_LIMIT, SPECIES_STAGNATION_LIMIT
 
 
 class LearningRule(Enum):
@@ -271,7 +271,7 @@ class Species(object):
         self.members = members if members is not None else []
         self.representative = representative
         self.age = 0
-        self.is_stagnant = False
+        self.generations_since_improvement = 0
 
     def __len__(self):
         return len(self.members)
@@ -284,6 +284,9 @@ class Species(object):
 
     def is_protected(self):
         return self.age < SPECIES_PROTECTION_LIMIT
+
+    def is_stagnant(self):
+        return self.generations_since_improvement > SPECIES_STAGNATION_LIMIT
 
 
 class Population(object):
