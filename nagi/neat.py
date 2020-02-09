@@ -13,7 +13,8 @@ from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, ADD_N
     MATING_CUTTOFF_PERCENTAGE, ELITISM, STDP_PARAMETERS_MUTATE_RATE, STDP_PARAMETERS_REINIT_RATE, \
     INHIBITORY_PROBABILITIES, EXCITATORY_PROBABILITIES, SYMMETRIC_A_PLUS_INIT_RANGE, SYMMETRIC_A_MINUS_INIT_RANGE, \
     SYMMETRIC_STD_INIT_RANGE, ASYMMETRIC_A_INIT_RANGE, ASYMMETRIC_TAU_INIT_RANGE, SYMMETRIC_A_PLUS_MUTATE_SCALE, \
-    SYMMETRIC_A_MINUS_MUTATE_SCALE, SYMMETRIC_STD_MUTATE_SCALE, ASYMMETRIC_A_MUTATE_SCALE, ASYMMETRIC_TAU_MUTATE_SCALE
+    SYMMETRIC_A_MINUS_MUTATE_SCALE, SYMMETRIC_STD_MUTATE_SCALE, ASYMMETRIC_A_MUTATE_SCALE, ASYMMETRIC_TAU_MUTATE_SCALE, \
+    SPECIES_PROTECTION_LIMIT
 
 
 class LearningRule(Enum):
@@ -156,7 +157,7 @@ class Genome(object):
         output_keys = [i for i in range(input_size, input_size + output_size)]
 
         # Initialize node genes for inputs and outputs.
-        # TODO: Should probably change this so that all input and output nodes are always inherited.
+        # TODO: Should probably change this so that all output nodes are always inherited.
         for input_key in input_keys:
             self.nodes[input_key] = InputNodeGene(input_key)
         for output_key in output_keys:
@@ -246,9 +247,9 @@ class Genome(object):
     def _get_number_of_disjoint_and_excess_connections(self, other):
         disjoint_connections = 0
         excess_connections = 0
-        nonmatches = set.union({key for key in self.connections.keys() if key not in other.connections.keys()},
-                               {key for key in other.connections.keys() if key not in self.connections.keys()})
-        for key in nonmatches:
+        non_matches = set.union({key for key in self.connections.keys() if key not in other.connections.keys()},
+                                {key for key in other.connections.keys() if key not in self.connections.keys()})
+        for key in non_matches:
             if key <= self.innovation_range() and key <= other.innovation_range():
                 disjoint_connections += 1
             else:
@@ -269,6 +270,8 @@ class Species(object):
         self.key = key
         self.members = members if members is not None else []
         self.representative = representative
+        self.age = 0
+        self.is_stagnant = False
 
     def __len__(self):
         return len(self.members)
@@ -278,6 +281,9 @@ class Species(object):
 
     def choose_random_representative(self):
         self.representative = random.choice(self.members)
+
+    def is_protected(self):
+        return self.age < SPECIES_PROTECTION_LIMIT
 
 
 class Population(object):
@@ -371,6 +377,8 @@ class Population(object):
                                                       fitnesses[parent_2.key])
                 new_population_of_genomes[offspring.key] = offspring
         self.genomes = new_population_of_genomes
+        for species in self.species.values():
+            species.age += 1
         self.speciate()
 
     def assign_number_of_offspring_to_species(self, fitnesses: Dict[int, float]) -> Dict[int, int]:
