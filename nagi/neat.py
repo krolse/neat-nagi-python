@@ -355,7 +355,7 @@ class Population(object):
                 self.species[new_species_id] = Species(new_species_id, members=[specimen], representative=specimen)
                 self._genome_id_to_species_id[specimen.key] = new_species_id
 
-    def create_new_offspring(self, parent_1: Genome, parent_2: Genome, fitness_1: float, fitness_2: float) -> Genome:
+    def _create_new_offspring(self, parent_1: Genome, parent_2: Genome, fitness_1: float, fitness_2: float) -> Genome:
         if fitness_2 > fitness_1:
             parent_1, parent_2 = parent_2, parent_1
         offspring = Genome(next(self._genome_id_counter), self._input_size, self._output_size,
@@ -376,7 +376,7 @@ class Population(object):
         self._remove_extinct_species(fitnesses_by_species)
 
         # Create new population of genomes
-        assigned_number_of_offspring_per_species = self.assign_number_of_offspring_to_species(fitnesses)
+        assigned_number_of_offspring_per_species = self._assign_number_of_offspring_to_species(fitnesses)
         new_population_of_genomes = {}
         for species_id, species in self.species.items():
             species_size = assigned_number_of_offspring_per_species[species_id]
@@ -392,15 +392,15 @@ class Population(object):
             while species_size > 0:
                 species_size -= 1
                 parent_1, parent_2 = sample_two_parents(old_members)
-                offspring = self.create_new_offspring(parent_1, parent_2,
-                                                      fitnesses[parent_1.key],
-                                                      fitnesses[parent_2.key])
+                offspring = self._create_new_offspring(parent_1, parent_2,
+                                                       fitnesses[parent_1.key],
+                                                       fitnesses[parent_2.key])
                 new_population_of_genomes[offspring.key] = offspring
 
         self.genomes = new_population_of_genomes
         self.speciate()
 
-    def assign_number_of_offspring_to_species(self, fitnesses: Dict[int, float]) -> Dict[int, int]:
+    def _assign_number_of_offspring_to_species(self, fitnesses: Dict[int, float]) -> Dict[int, int]:
         total_adjusted_fitness = self._get_total_sum_of_adjusted_fitnesses(fitnesses)
         sum_of_adjusted_fitnesses_by_species = self._get_sum_of_adjusted_fitnesses_by_species(fitnesses)
         assigned_number_of_offspring = {
