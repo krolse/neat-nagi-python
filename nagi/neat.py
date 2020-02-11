@@ -271,7 +271,8 @@ class Species(object):
         self.members = members if members is not None else []
         self.representative = representative
         self.age = 0
-        self.generations_since_improvement = 0
+        self._generations_since_improvement = 0
+        self._best_fitness = 0
 
     def __len__(self):
         return len(self.members)
@@ -286,7 +287,14 @@ class Species(object):
         return self.age < SPECIES_PROTECTION_LIMIT
 
     def is_stagnant(self):
-        return self.generations_since_improvement > SPECIES_STAGNATION_LIMIT
+        return self._generations_since_improvement > SPECIES_STAGNATION_LIMIT
+
+    def update_stagnation(self, fitness: float):
+        if fitness > self._best_fitness:
+            self._best_fitness = fitness
+            self._generations_since_improvement = 0
+        else:
+            self._generations_since_improvement += 1
 
 
 class Population(object):
@@ -360,6 +368,14 @@ class Population(object):
         def sample_two_parents(members: List[Genome]):
             return random.sample(members, 2) if len(members) > 1 else (random.choice(members), random.choice(members))
 
+        # Remove species going extinct.
+        fitnesses_by_species = self._get_sum_of_adjusted_fitnesses_by_species(fitnesses)
+        for key, species in self.species.items():
+            species.age += 1
+            species.update_stagnation(fitnesses_by_species[key])
+        self._remove_extinct_species(fitnesses_by_species)
+
+        # Create new population of genomes
         assigned_number_of_offspring_per_species = self.assign_number_of_offspring_to_species(fitnesses)
         new_population_of_genomes = {}
         for species_id, species in self.species.items():
@@ -380,10 +396,8 @@ class Population(object):
                                                       fitnesses[parent_1.key],
                                                       fitnesses[parent_2.key])
                 new_population_of_genomes[offspring.key] = offspring
+
         self.genomes = new_population_of_genomes
-        for species in self.species.values():
-            species.age += 1
-        self._remove_extinct_species(fitnesses)
         self.speciate()
 
     def assign_number_of_offspring_to_species(self, fitnesses: Dict[int, float]) -> Dict[int, int]:
