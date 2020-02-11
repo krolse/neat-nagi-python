@@ -333,12 +333,16 @@ class Population(object):
         for species in self.species.values():
             species.choose_random_representative()
 
-    def _remove_extinct_species(self, fitnesses: Dict[int, float]):
-        sorted_species_by_fitness = [key for key, fitness in sorted(fitnesses.items(), key=lambda x: x[1])]
+    def _remove_extinct_species(self, fitness_by_species: Dict[int, float], fitnesses: Dict[int, float]):
+        sorted_species_by_fitness = [key for key, fitness in sorted(fitness_by_species.items(), key=lambda x: x[1])]
         cutoff = int(np.floor(len(sorted_species_by_fitness) * (2 / 3)))
-        for species in (species for species in self.species.values()
-                        if (species.is_stagnant() and not species.is_protected()
-                            and species.key not in sorted_species_by_fitness[cutoff:])):
+        extinct_species = [species for species in self.species.values()
+                           if (species.is_stagnant()
+                               and not species.is_protected()
+                               and species.key not in sorted_species_by_fitness[cutoff:])]
+        for species in extinct_species:
+            for member in species.members:
+                fitnesses.pop(member.key)
             self.species.pop(species.key)
 
     def _assign_species(self, unspeciated: List[Genome]):
@@ -369,11 +373,11 @@ class Population(object):
             return random.sample(members, 2) if len(members) > 1 else (random.choice(members), random.choice(members))
 
         # Remove species going extinct.
-        fitnesses_by_species = self._get_sum_of_adjusted_fitnesses_by_species(fitnesses)
+        fitness_by_species = self._get_sum_of_adjusted_fitnesses_by_species(fitnesses)
         for key, species in self.species.items():
             species.age += 1
-            species.update_stagnation(fitnesses_by_species[key])
-        self._remove_extinct_species(fitnesses_by_species)
+            species.update_stagnation(fitness_by_species[key])
+        self._remove_extinct_species(fitness_by_species, fitnesses)
 
         # Create new population of genomes
         assigned_number_of_offspring_per_species = self._assign_number_of_offspring_to_species(fitnesses)
