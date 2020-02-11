@@ -318,19 +318,20 @@ class Population(object):
 
         # Assign species to new individuals.
         unspeciated = [individual for individual in self.genomes.values() if
-                       individual not in [member for spec in self.species.values() for member in spec.members]]
+                       individual not in [member for species in self.species.values() for member in species.members]]
         self._assign_species(unspeciated)
-
-        # Remove extinct species:
-        self._remove_extinct_species()
 
         # Choose random representative for the next generation.
         for species in self.species.values():
             species.choose_random_representative()
 
-    def _remove_extinct_species(self):
-        for species_id in [species_id for species_id, species in self.species.items() if not species.members]:
-            self.species.pop(species_id)
+    def _remove_extinct_species(self, fitnesses: Dict[int, float]):
+        sorted_species_by_fitness = [key for key, fitness in sorted(fitnesses.items(), key=lambda x: x[1])]
+        cutoff = int(np.floor(len(sorted_species_by_fitness) * (2 / 3)))
+        for species in (species for species in self.species.values()
+                        if (species.is_stagnant() and not species.is_protected()
+                            and species.key not in sorted_species_by_fitness[cutoff:])):
+            self.species.pop(species.key)
 
     def _assign_species(self, unspeciated: List[Genome]):
         for specimen in unspeciated:
@@ -382,6 +383,7 @@ class Population(object):
         self.genomes = new_population_of_genomes
         for species in self.species.values():
             species.age += 1
+        self._remove_extinct_species(fitnesses)
         self.speciate()
 
     def assign_number_of_offspring_to_species(self, fitnesses: Dict[int, float]) -> Dict[int, int]:
