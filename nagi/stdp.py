@@ -44,7 +44,8 @@ def symmetric_hebbian(delta_t: float, a_plus: float, a_minus: float, std_plus: f
         return exp(-0.5 * (delta_t / std) ** 2) / (std * sqrt(2 * pi))
 
     difference_of_gaussian = gaussian(std_plus) - gaussian(std_minus)
-    return (a_plus if difference_of_gaussian > 0 else a_minus) * difference_of_gaussian
+    a = a_plus if difference_of_gaussian > 0 else a_minus
+    return a * difference_of_gaussian
 
 
 def symmetric_anti_hebbian(delta_t: float, a_plus: float, a_minus: float, std_plus: float, std_minus: float):

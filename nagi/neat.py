@@ -13,7 +13,8 @@ from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, ADD_N
     MATING_CUTTOFF_PERCENTAGE, ELITISM, STDP_PARAMETERS_MUTATE_RATE, STDP_PARAMETERS_REINIT_RATE, \
     INHIBITORY_PROBABILITIES, EXCITATORY_PROBABILITIES, SYMMETRIC_A_PLUS_INIT_RANGE, SYMMETRIC_A_MINUS_INIT_RANGE, \
     SYMMETRIC_STD_INIT_RANGE, ASYMMETRIC_A_INIT_RANGE, ASYMMETRIC_TAU_INIT_RANGE, SYMMETRIC_A_PLUS_MUTATE_SCALE, \
-    SYMMETRIC_A_MINUS_MUTATE_SCALE, SYMMETRIC_STD_MUTATE_SCALE, ASYMMETRIC_A_MUTATE_SCALE, ASYMMETRIC_TAU_MUTATE_SCALE
+    SYMMETRIC_A_MINUS_MUTATE_SCALE, SYMMETRIC_STD_MUTATE_SCALE, ASYMMETRIC_A_MUTATE_SCALE, ASYMMETRIC_TAU_MUTATE_SCALE, \
+    SPECIES_PROTECTION_LIMIT, SPECIES_STAGNATION_LIMIT
 
 
 class LearningRule(Enum):
@@ -156,7 +157,7 @@ class Genome(object):
         output_keys = [i for i in range(input_size, input_size + output_size)]
 
         # Initialize node genes for inputs and outputs.
-        # TODO: Should probably change this so that all input and output nodes are always inherited.
+        # TODO: Should probably change this so that all output nodes are always inherited.
         for input_key in input_keys:
             self.nodes[input_key] = InputNodeGene(input_key)
         for output_key in output_keys:
@@ -246,9 +247,9 @@ class Genome(object):
     def _get_number_of_disjoint_and_excess_connections(self, other):
         disjoint_connections = 0
         excess_connections = 0
-        nonmatches = set.union({key for key in self.connections.keys() if key not in other.connections.keys()},
-                               {key for key in other.connections.keys() if key not in self.connections.keys()})
-        for key in nonmatches:
+        non_matches = set.union({key for key in self.connections.keys() if key not in other.connections.keys()},
+                                {key for key in other.connections.keys() if key not in self.connections.keys()})
+        for key in non_matches:
             if key <= self.innovation_range() and key <= other.innovation_range():
                 disjoint_connections += 1
             else:
@@ -269,6 +270,9 @@ class Species(object):
         self.key = key
         self.members = members if members is not None else []
         self.representative = representative
+        self.age = 0
+        self._generations_since_improvement = 0
+        self._best_fitness = 0
 
     def __len__(self):
         return len(self.members)
@@ -278,6 +282,19 @@ class Species(object):
 
     def choose_random_representative(self):
         self.representative = random.choice(self.members)
+
+    def is_protected(self):
+        return self.age < SPECIES_PROTECTION_LIMIT
+
+    def is_stagnant(self):
+        return self._generations_since_improvement > SPECIES_STAGNATION_LIMIT
+
+    def update_stagnation(self, fitness: float):
+        if fitness > self._best_fitness:
+            self._best_fitness = fitness
+            self._generations_since_improvement = 0
+        else:
+            self._generations_since_improvement += 1
 
 
 class Population(object):
@@ -309,19 +326,24 @@ class Population(object):
 
         # Assign species to new individuals.
         unspeciated = [individual for individual in self.genomes.values() if
-                       individual not in [member for spec in self.species.values() for member in spec.members]]
+                       individual not in [member for species in self.species.values() for member in species.members]]
         self._assign_species(unspeciated)
-
-        # Remove extinct species:
-        self._remove_extinct_species()
 
         # Choose random representative for the next generation.
         for species in self.species.values():
             species.choose_random_representative()
 
-    def _remove_extinct_species(self):
-        for species_id in [species_id for species_id, species in self.species.items() if not species.members]:
-            self.species.pop(species_id)
+    def _remove_extinct_species(self, fitness_by_species: Dict[int, float], fitnesses: Dict[int, float]):
+        sorted_species_by_fitness = [key for key, fitness in sorted(fitness_by_species.items(), key=lambda x: x[1])]
+        cutoff = int(np.floor(len(sorted_species_by_fitness) * (2 / 3)))
+        extinct_species = [species for species in self.species.values()
+                           if (species.is_stagnant()
+                               and not species.is_protected()
+                               and species.key not in sorted_species_by_fitness[cutoff:])]
+        for species in extinct_species:
+            for member in species.members:
+                fitnesses.pop(member.key)
+            self.species.pop(species.key)
 
     def _assign_species(self, unspeciated: List[Genome]):
         for specimen in unspeciated:
@@ -337,7 +359,7 @@ class Population(object):
                 self.species[new_species_id] = Species(new_species_id, members=[specimen], representative=specimen)
                 self._genome_id_to_species_id[specimen.key] = new_species_id
 
-    def create_new_offspring(self, parent_1: Genome, parent_2: Genome, fitness_1: float, fitness_2: float) -> Genome:
+    def _create_new_offspring(self, parent_1: Genome, parent_2: Genome, fitness_1: float, fitness_2: float) -> Genome:
         if fitness_2 > fitness_1:
             parent_1, parent_2 = parent_2, parent_1
         offspring = Genome(next(self._genome_id_counter), self._input_size, self._output_size,
@@ -350,7 +372,15 @@ class Population(object):
         def sample_two_parents(members: List[Genome]):
             return random.sample(members, 2) if len(members) > 1 else (random.choice(members), random.choice(members))
 
-        assigned_number_of_offspring_per_species = self.assign_number_of_offspring_to_species(fitnesses)
+        # Remove species going extinct.
+        fitness_by_species = self._get_sum_of_adjusted_fitnesses_by_species(fitnesses)
+        for key, species in self.species.items():
+            species.age += 1
+            species.update_stagnation(fitness_by_species[key])
+        self._remove_extinct_species(fitness_by_species, fitnesses)
+
+        # Create new population of genomes
+        assigned_number_of_offspring_per_species = self._assign_number_of_offspring_to_species(fitnesses)
         new_population_of_genomes = {}
         for species_id, species in self.species.items():
             species_size = assigned_number_of_offspring_per_species[species_id]
@@ -366,14 +396,15 @@ class Population(object):
             while species_size > 0:
                 species_size -= 1
                 parent_1, parent_2 = sample_two_parents(old_members)
-                offspring = self.create_new_offspring(parent_1, parent_2,
-                                                      fitnesses[parent_1.key],
-                                                      fitnesses[parent_2.key])
+                offspring = self._create_new_offspring(parent_1, parent_2,
+                                                       fitnesses[parent_1.key],
+                                                       fitnesses[parent_2.key])
                 new_population_of_genomes[offspring.key] = offspring
+
         self.genomes = new_population_of_genomes
         self.speciate()
 
-    def assign_number_of_offspring_to_species(self, fitnesses: Dict[int, float]) -> Dict[int, int]:
+    def _assign_number_of_offspring_to_species(self, fitnesses: Dict[int, float]) -> Dict[int, int]:
         total_adjusted_fitness = self._get_total_sum_of_adjusted_fitnesses(fitnesses)
         sum_of_adjusted_fitnesses_by_species = self._get_sum_of_adjusted_fitnesses_by_species(fitnesses)
         assigned_number_of_offspring = {
