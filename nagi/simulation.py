@@ -1,5 +1,5 @@
 import pickle
-import random
+import sys
 from typing import List
 
 from nagi import constants
@@ -34,8 +34,14 @@ def get_reward_frequency(sample: int, eat: int, avoid: int, current_frequency: i
             return current_frequency
 
 
-high_frequency = generate_spike_frequency(300, TIME_STEP_IN_MSEC)
+def swap_frequency(frequency_1):
+    return high_frequency if frequency_1 == low_frequency else low_frequency
+
+
+high_frequency = generate_spike_frequency(500, TIME_STEP_IN_MSEC)
 low_frequency = generate_spike_frequency(5, TIME_STEP_IN_MSEC)
+spike_actuator_window = 0.5
+max_counter_length = int(spike_actuator_window/(TIME_STEP_IN_MSEC/1000))
 food = [1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0]
 
 with open('../data/test_genome.pkl', 'rb') as file:
@@ -43,16 +49,24 @@ with open('../data/test_genome.pkl', 'rb') as file:
 # visualize_genome(test_genome)
 snn = SpikingNeuralNetwork.create(test_genome, 5.0, **constants.REGULAR_SPIKING_PARAMS)
 for sample_food in food:
-    eat_counter = 0
-    avoid_counter = 0
-    input_frequency = high_frequency if sample_food else low_frequency
-    reward_frequency = random.choice((high_frequency, low_frequency))
-    for time_step in range(20000):
-        reward_frequency = get_reward_frequency(sample_food, eat_counter, avoid_counter, reward_frequency)
-        inputs = [40 if time_step % input_frequency == 0 else 0,
-                  40 if time_step % reward_frequency == 0 else 0]
+    eat_counter = []
+    avoid_counter = []
+    input_frequency_1 = high_frequency if sample_food else low_frequency
+    input_frequency_2 = low_frequency if sample_food else high_frequency
+    reward_frequency_1 = sys.maxsize
+    reward_frequency_2 = sys.maxsize
+    for time_step in range(50000):
+        reward_frequency_1 = get_reward_frequency(sample_food, sum(eat_counter), sum(avoid_counter), reward_frequency_1)
+        reward_frequency_2 = low_frequency if reward_frequency_1 == high_frequency else high_frequency
+        inputs = [40 if time_step % input_frequency_1 == 0 else 0,
+                  40 if time_step % input_frequency_2 == 0 else 0,
+                  40 if time_step % reward_frequency_1 == 0 else 0,
+                  40 if time_step % reward_frequency_2 == 0 else 0]
         snn.set_inputs(inputs)
         outputs = snn.advance(TIME_STEP_IN_MSEC)
-        eat_counter += outputs[0]
-        avoid_counter += outputs[1]
-    print(f'Food: {sample_food}, Eat: {eat_counter}, Avoid: {avoid_counter}')
+        if time_step >= max_counter_length:
+            eat_counter.pop(0)
+            avoid_counter.pop(0)
+        eat_counter.append(outputs[0])
+        avoid_counter.append(outputs[1])
+    print(f'Food: {sample_food}, Eat: {sum(eat_counter)}, Avoid: {sum(avoid_counter)}')
