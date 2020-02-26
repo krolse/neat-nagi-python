@@ -1,7 +1,7 @@
 import pickle
 import sys
 from enum import Enum
-from random import random
+import random
 from typing import List
 
 from nagi.constants import TIME_STEP_IN_MSEC, MAX_HEALTH_POINTS, DAMAGE_FROM_EATING_CORRECT_FOOD, \
@@ -48,6 +48,7 @@ class Environment(object):
         self.beneficial_food = random.choice([value for value in Food])
         self.food_loadout = self._initialize_food_loadout()
         self.maximum_possible_lifetime = len(self.food_loadout)
+        self.minimum_lifetime = self._get_minimum_lifetime()
 
     def mutate(self):
         self.beneficial_food = Food.WHITE if self.beneficial_food is Food.BLACK else Food.BLACK
@@ -65,6 +66,8 @@ class Environment(object):
 
     def simulate(self, agent: Agent) -> float:
         for i, sample in enumerate(self.food_loadout):
+            if i >= FLIP_POINT and i % FLIP_POINT == 0:
+                self.mutate()
             eat_actuator = []
             avoid_actuator = []
             if agent.health_points <= 0:
@@ -73,8 +76,6 @@ class Environment(object):
             inputs = self._get_initial_input_voltages()
             for time_step in range(25000):
                 if time_step > 0:
-                    if time_step % FLIP_POINT == 0:
-                        self.mutate()
                     frequencies = self._get_input_frequencies(time_step, sample, eat_actuator, avoid_actuator,
                                                               frequencies[2:])
                     inputs = self._get_input_voltages(time_step, frequencies)
@@ -86,14 +87,15 @@ class Environment(object):
                     avoid_actuator.append(time_step)
             agent.eat_actuator = Environment._count_spikes_within_time_window(25000 - 1, eat_actuator)
             agent.avoid_actuator = Environment._count_spikes_within_time_window(25000 - 1, avoid_actuator)
+            print(f'Agent health: {agent.health_points}, i={i}, beneficial food: {self.beneficial_food}, sample: {sample}, action: {agent.select_action()}')
             self.deal_damage(agent, sample)
 
     def _initialize_food_loadout(self):
-        initial_loadout = random.choice([value for value in Food], MAX_HEALTH_POINTS)
+        initial_loadout = random.choices([value for value in Food], k=MAX_HEALTH_POINTS)
         beneficial_food = self.beneficial_food
         mock_health = MAX_HEALTH_POINTS
         for i, sample in enumerate(initial_loadout):
-            if i > 0 and i % FLIP_POINT == 0:
+            if i >= FLIP_POINT and i % FLIP_POINT == 0:
                 beneficial_food = Food.WHITE if beneficial_food == Food.BLACK else Food.BLACK
             mock_health -= DAMAGE_FROM_EATING_CORRECT_FOOD if sample is beneficial_food else DAMAGE_FROM_AVOIDING_FOOD
             if mock_health <= 0:
@@ -118,11 +120,24 @@ class Environment(object):
         return [input_frequency_1, input_frequency_2, sys.maxsize, sys.maxsize]
 
     def _fitness(self, lifetime: int):
-        return lifetime / self.maximum_possible_lifetime
+        return (lifetime - self.minimum_lifetime) / (self.maximum_possible_lifetime - self.minimum_lifetime)
+
+    def _get_minimum_lifetime(self):
+        beneficial_food = self.beneficial_food
+        mock_health = MAX_HEALTH_POINTS
+        for i, food in enumerate(self.food_loadout):
+            if i >= FLIP_POINT and i % FLIP_POINT == 0:
+                beneficial_food = Food.WHITE if beneficial_food == Food.BLACK else Food.BLACK
+            if food is beneficial_food:
+                mock_health -= DAMAGE_FROM_AVOIDING_FOOD
+            else:
+                mock_health -= DAMAGE_FROM_EATING_WRONG_FOOD
+            if mock_health <= 0:
+                return i
 
     @staticmethod
     def _get_input_voltages(time_step: int, frequencies: List[int]):
-        return [INPUT_SPIKE_VOLTAGE if time_step % frequency == 0 else 0 for frequency in
+        return [INPUT_SPIKE_VOLTAGE if time_step > frequency and time_step % frequency == 0 else 0 for frequency in
                 frequencies]
 
     @staticmethod
