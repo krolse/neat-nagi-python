@@ -35,7 +35,7 @@ class SpikingNeuron(object):
         self.b = b
         self.c = c
         self.d = d
-        self.inputs = {key: np.random.random() for key in inputs}
+        self.inputs = {key: np.random.random() * NEURON_WEIGHT_BUDGET for key in inputs}
         self._normalize_weights()
         self.learning_rule = learning_rule
         self.stdp_parameters = stdp_parameters
