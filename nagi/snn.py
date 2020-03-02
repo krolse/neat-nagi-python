@@ -4,7 +4,7 @@ from typing import List, Dict
 import numpy as np
 
 from nagi.constants import MEMBRANE_POTENTIAL_THRESHOLD, STDP_PARAMS, STDP_LEARNING_WINDOW, NEURON_WEIGHT_BUDGET, \
-    THRESHOLD_THETA_INCREMENT_RATE, THRESHOLD_THETA_DECAY_RATE, MAX_THRESHOLD_THETA
+    THRESHOLD_THETA_INCREMENT_RATE, THRESHOLD_THETA_DECAY_RATE, MAX_THRESHOLD_THETA, SPIKE_VOLTAGE
 from nagi.neat import Genome, NeuralNodeGene, InputNodeGene, OutputNodeGene
 from nagi.stdp import *
 
@@ -18,7 +18,7 @@ class SpikingNeuron(object):
     """Class representing a single spiking neuron."""
 
     def __init__(self, bias: float, a: float, b: float, c: float, d: float, inputs: List[int],
-                 learning_rule: LearningRule, stdp_parameters: Dict[str, float]):
+                 learning_rule: LearningRule, is_inhibitory: bool, stdp_parameters: Dict[str, float]):
         """
         a, b, c, and d are the parameters of the Izhikevich model.
 
@@ -35,9 +35,10 @@ class SpikingNeuron(object):
         self.b = b
         self.c = c
         self.d = d
-        self.inputs = {key: np.random.random() * NEURON_WEIGHT_BUDGET for key in inputs}
+        self.inputs = {key: np.random.normal(0.5, 0.1) for key in inputs}
         self._normalize_weights()
         self.learning_rule = learning_rule
+        self.is_inhibitory = is_inhibitory
         self.stdp_parameters = stdp_parameters
 
         self.membrane_potential = self.c
@@ -84,7 +85,7 @@ class SpikingNeuron(object):
                                              t + dt < STDP_LEARNING_WINDOW]
 
         if self.membrane_potential > MEMBRANE_POTENTIAL_THRESHOLD + self.threshold_theta:
-            self.fired = 1
+            self.fired = SPIKE_VOLTAGE if not self.is_inhibitory else -SPIKE_VOLTAGE
             self.has_fired = True
             self.membrane_potential = self.c
             self.membrane_recovery += self.d
@@ -222,7 +223,7 @@ class SpikingNeuralNetwork(object):
             node_inputs[connection_gene.destination_node].append(connection_gene.origin_node)
 
         neurons = {key: SpikingNeuron(bias, a, b, c, d, inputs, learning_nodes[key].learning_rule,
-                                      learning_nodes[key].stdp_parameters)
+                                      learning_nodes[key].is_inhibitory, learning_nodes[key].stdp_parameters)
                    for key, inputs in node_inputs.items()}
 
         return SpikingNeuralNetwork(neurons, input_keys, output_keys)
