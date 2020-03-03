@@ -71,8 +71,6 @@ class Environment(object):
         avoid_actuator = []
         inputs = self._get_initial_input_voltages()
         for i, sample in enumerate(self.food_loadout):
-            eat_actuator = [t for t in eat_actuator if i * NUM_TIME_STEPS - t <= ACTUATOR_WINDOW]
-            avoid_actuator = [t for t in eat_actuator if i * NUM_TIME_STEPS - t <= ACTUATOR_WINDOW]
             frequencies = self._get_initial_input_frequencies(sample)
             if i >= FLIP_POINT and i % FLIP_POINT == 0:
                 print(10 * "=")
@@ -101,6 +99,47 @@ class Environment(object):
             print(f'Agent health: {agent.health_points}, i={i}, beneficial food: {self.beneficial_food}, sample: {sample}, action: {agent.select_action()} {str_correct_wrong}')
             print(f'Eat: {agent.eat_actuator}, Avoid: {agent.avoid_actuator}')
         return agent.key, self._fitness(self.maximum_possible_lifetime)
+
+    def simulate_with_visualization(self, agent: Agent) -> Tuple[int, float, dict, dict, int]:
+        eat_actuator = []
+        avoid_actuator = []
+        weights = {key: [] for key, _ in agent.spiking_neural_network.get_weights().items()}
+        membrane_potentials = {key: [] for key, _ in agent.spiking_neural_network.get_membrane_potentials().items()}
+
+        inputs = self._get_initial_input_voltages()
+        for i, sample in enumerate(self.food_loadout):
+            frequencies = self._get_initial_input_frequencies(sample)
+            if i >= FLIP_POINT and i % FLIP_POINT == 0:
+                print(10 * "=")
+                self.mutate()
+            for time_step in range(i * NUM_TIME_STEPS, (i + 1) * NUM_TIME_STEPS):
+                for key, weight in agent.spiking_neural_network.get_weights().items():
+                    weights[key].append(weight)
+                for key, membrane_potential in agent.spiking_neural_network.get_membrane_potentials().items():
+                    membrane_potentials[key].append(membrane_potential)
+                if agent.health_points <= 0:
+                    return agent.key, self._fitness(time_step), weights, membrane_potentials, time_step
+                if time_step > 0:
+                    frequencies = self._get_input_frequencies(time_step, sample, eat_actuator, avoid_actuator,
+                                                              frequencies[2:])
+                    inputs = self._get_input_voltages(time_step, frequencies)
+
+                agent.spiking_neural_network.set_inputs(inputs)
+                eat, avoid = agent.spiking_neural_network.advance(TIME_STEP_IN_MSEC)
+                if eat:
+                    eat_actuator.append(time_step)
+                if avoid:
+                    avoid_actuator.append(time_step)
+                agent.eat_actuator = Environment._count_spikes_within_time_window(time_step, eat_actuator)
+                agent.avoid_actuator = Environment._count_spikes_within_time_window(time_step, avoid_actuator)
+                self.deal_damage(agent, sample)
+            str_correct_wrong = "CORRECT" if (
+                                    agent.select_action() is Action.EAT and sample is self.beneficial_food) or (
+                                    agent.select_action() is Action.AVOID and sample is not self.beneficial_food) \
+                                else "WRONG"
+            print(f'Agent health: {agent.health_points}, i={i}, beneficial food: {self.beneficial_food}, sample: {sample}, action: {agent.select_action()} {str_correct_wrong}')
+            print(f'Eat: {agent.eat_actuator}, Avoid: {agent.avoid_actuator}')
+        return agent.key, self._fitness(self.maximum_possible_lifetime), weights, membrane_potentials, self.maximum_possible_lifetime
 
     @staticmethod
     def _initialize_food_loadout():

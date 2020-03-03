@@ -212,6 +212,17 @@ class SpikingNeuralNetwork(object):
         for neuron in self.neurons.values():
             neuron.reset()
 
+    def get_weights(self):
+        weights = {}
+        for destination_key, neuron in self.neurons.items():
+            for origin_key, weight in neuron.inputs.items():
+                weights[(origin_key, destination_key)] = weight
+        return weights
+
+    def get_membrane_potentials(self):
+        return {key: (neuron.membrane_potential, MEMBRANE_POTENTIAL_THRESHOLD + neuron.threshold_theta) for key, neuron
+                in self.neurons.items()}
+
     @staticmethod
     def create(genome: Genome, bias: float, a: float, b: float, c: float, d: float):
         learning_nodes = {key: node for key, node in genome.nodes.items() if isinstance(node, NeuralNodeGene)}

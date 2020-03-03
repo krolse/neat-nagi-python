@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
 from nagi import snn, constants
-from nagi.constants import TIME_STEP_IN_MSEC, SYMMETRIC_HEBBIAN_PARAMS, ASYMMETRIC_HEBBIAN_PARAMS
+from nagi.constants import TIME_STEP_IN_MSEC, SYMMETRIC_HEBBIAN_PARAMS, ASYMMETRIC_HEBBIAN_PARAMS, SPIKE_VOLTAGE
 from nagi.neat import LearningRule
 
 
@@ -67,10 +67,10 @@ def show(title, learning_rule, a, b, c, d):
     network = snn.SpikingNeuralNetwork({1: neuron}, [0], [1])
     spike_train = []
     for i in range(5000):
-        network.set_inputs([0 if i % 50 == 0 else 0])
-        spike_train.append((0.05 * i, neuron.current, neuron.membrane_potential, neuron.membrane_recovery,
+        network.set_inputs([SPIKE_VOLTAGE if i % 50 == 0 else 0])
+        spike_train.append((0.1 * i, neuron.current, neuron.membrane_potential, neuron.membrane_recovery,
                             neuron.fired, neuron.inputs[0]))
-        network.advance(0.05)
+        network.advance(0.1)
 
     plot_spikes(spike_train, title)
 
