@@ -4,9 +4,9 @@ from typing import List, Tuple
 
 from nagi.constants import TIME_STEP_IN_MSEC, MAX_HEALTH_POINTS, DAMAGE_FROM_AVOIDING_FOOD, FLIP_POINT, \
     REGULAR_SPIKING_PARAMS, DAMAGE_FROM_EATING_WRONG_FOOD, ACTUATOR_WINDOW, \
-    SPIKE_VOLTAGE, NUM_TIME_STEPS, DAMAGE_FROM_CORRECT_ACTION, DAMAGE_FROM_INCORRECT_ACTION, FOOD_SAMPLES_PER_SIMULATION
+    LIF_SPIKE_VOLTAGE, NUM_TIME_STEPS, DAMAGE_FROM_CORRECT_ACTION, DAMAGE_FROM_INCORRECT_ACTION, FOOD_SAMPLES_PER_SIMULATION
 from nagi.neat import Genome
-from nagi.snn import SpikingNeuralNetwork
+from nagi.lifsnn import LIFSpikingNeuralNetwork
 
 
 class Food(Enum):
@@ -20,7 +20,7 @@ class Action(Enum):
 
 
 class Agent(object):
-    def __init__(self, key: int, spiking_neural_network: SpikingNeuralNetwork):
+    def __init__(self, key: int, spiking_neural_network: LIFSpikingNeuralNetwork):
         self.spiking_neural_network = spiking_neural_network
         self.key = key
         self.eat_actuator = 0
@@ -36,7 +36,7 @@ class Agent(object):
 
     @staticmethod
     def create_agent(genome: Genome):
-        return Agent(genome.key, SpikingNeuralNetwork.create(genome, 5, **REGULAR_SPIKING_PARAMS))
+        return Agent(genome.key, LIFSpikingNeuralNetwork.create(genome))
 
 
 class Environment(object):
@@ -189,12 +189,12 @@ class Environment(object):
 
     @staticmethod
     def _get_input_voltages(time_step: int, frequencies: List[int]):
-        return [SPIKE_VOLTAGE if time_step > frequency and time_step % frequency == 0 else 0 for frequency in
+        return [LIF_SPIKE_VOLTAGE if time_step > frequency and time_step % frequency == 0 else 0 for frequency in
                 frequencies]
 
     @staticmethod
     def _get_initial_input_voltages():
-        return [SPIKE_VOLTAGE, SPIKE_VOLTAGE, 0, 0]
+        return [LIF_SPIKE_VOLTAGE, LIF_SPIKE_VOLTAGE, 0, 0]
 
     @staticmethod
     def _count_spikes_within_time_window(time_step: int, actuator: List[int]):

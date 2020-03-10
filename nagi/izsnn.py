@@ -3,8 +3,8 @@ from typing import List, Dict
 
 import numpy as np
 
-from nagi.constants import MEMBRANE_POTENTIAL_THRESHOLD, STDP_PARAMS, STDP_LEARNING_WINDOW, NEURON_WEIGHT_BUDGET, \
-    THRESHOLD_THETA_INCREMENT_RATE, THRESHOLD_THETA_DECAY_RATE, MAX_THRESHOLD_THETA, SPIKE_VOLTAGE
+from nagi.constants import IZ_MEMBRANE_POTENTIAL_THRESHOLD, STDP_PARAMS, STDP_LEARNING_WINDOW, NEURON_WEIGHT_BUDGET, \
+    THRESHOLD_THETA_INCREMENT_RATE, THRESHOLD_THETA_DECAY_RATE, MAX_THRESHOLD_THETA, IZ_SPIKE_VOLTAGE
 from nagi.neat import Genome, NeuralNodeGene, InputNodeGene, OutputNodeGene
 from nagi.stdp import *
 
@@ -84,8 +84,8 @@ class SpikingNeuron(object):
             self.input_spike_timings[key] = [t + dt for t in self.input_spike_timings[key] if
                                              t + dt < STDP_LEARNING_WINDOW]
 
-        if self.membrane_potential > MEMBRANE_POTENTIAL_THRESHOLD + self.threshold_theta:
-            self.fired = SPIKE_VOLTAGE if not self.is_inhibitory else -SPIKE_VOLTAGE
+        if self.membrane_potential > IZ_MEMBRANE_POTENTIAL_THRESHOLD + self.threshold_theta:
+            self.fired = IZ_SPIKE_VOLTAGE if not self.is_inhibitory else -IZ_SPIKE_VOLTAGE
             self.has_fired = True
             self.membrane_potential = self.c
             self.membrane_recovery += self.d
@@ -203,7 +203,7 @@ class SpikingNeuralNetwork(object):
                     neuron.input_spike_timings[key].append(0)
 
                 neuron.current += in_value * weight
-                neuron.advance(dt)
+            neuron.advance(dt)
 
         return [self.neurons[key].fired for key in self.outputs]
 
@@ -220,7 +220,7 @@ class SpikingNeuralNetwork(object):
         return weights
 
     def get_membrane_potentials(self):
-        return {key: (neuron.membrane_potential, MEMBRANE_POTENTIAL_THRESHOLD + neuron.threshold_theta) for key, neuron
+        return {key: (neuron.membrane_potential, IZ_MEMBRANE_POTENTIAL_THRESHOLD + neuron.threshold_theta) for key, neuron
                 in self.neurons.items()}
 
     @staticmethod

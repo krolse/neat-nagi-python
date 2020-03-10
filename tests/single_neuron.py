@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 
-from nagi import snn, constants
+from nagi import izsnn, constants
 from nagi.constants import ASYMMETRIC_HEBBIAN_PARAMS
 from nagi.neat import LearningRule
 
@@ -52,7 +52,7 @@ def plot_spikes(spikes, title):
 
 
 def show(title, a, b, c, d):
-    n = snn.SpikingNeuron(0.0, a, b, c, d, [], LearningRule.asymmetric_hebbian, False,  ASYMMETRIC_HEBBIAN_PARAMS)
+    n = izsnn.SpikingNeuron(0.0, a, b, c, d, [], LearningRule.asymmetric_hebbian, False, ASYMMETRIC_HEBBIAN_PARAMS)
     spike_train = []
     for i in range(1000):
         n.current = 0.0 if i < 100 or i > 800 else 10.0
