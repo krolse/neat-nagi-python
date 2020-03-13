@@ -47,6 +47,9 @@ class LIFSpikingNeuron(object):
         :param dt: Time step in milliseconds.
         """
 
+        if self.membrane_potential > LIF_MEMBRANE_POTENTIAL_THRESHOLD + self.threshold_theta:
+            self.threshold_theta += THRESHOLD_THETA_INCREMENT_RATE
+
         self.fired = 0
         self.output_spike_timing += dt
 

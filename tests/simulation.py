@@ -5,10 +5,19 @@ import matplotlib.pyplot as plt
 
 import pickle
 
-with open('../data/test_genome_2.pkl', 'rb') as file:
+with open('../data/test_genome.pkl', 'rb') as file:
     test_genome = pickle.load(file)
 
+for i in [4,6,7]:
+    test_genome.nodes[i].stdp_parameters['std_minus'] = 20
+    test_genome.nodes[i].stdp_parameters['std_plus'] = 10
+    test_genome.nodes[i].stdp_parameters['a_plus'] = 5
+    test_genome.nodes[i].stdp_parameters['a_minus'] = 20
+
+    print(test_genome.nodes[i].stdp_parameters)
+
 agent = Agent.create_agent(test_genome)
+agent.spiking_neural_network.neurons[7].inputs[6] = 0.2
 for neuron in agent.spiking_neural_network.neurons.values():
     neuron.bias = 0
 visualize_genome(test_genome, True)
