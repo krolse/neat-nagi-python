@@ -1,4 +1,5 @@
 from nagi.simulation import Environment, Agent
+from nagi.visualization import visualize_genome
 import matplotlib.pyplot as plt
 
 
@@ -6,10 +7,12 @@ import pickle
 
 with open('../data/test_genome.pkl', 'rb') as file:
     test_genome = pickle.load(file)
+
 agent = Agent.create_agent(test_genome)
 for neuron in agent.spiking_neural_network.neurons.values():
     neuron.bias = 0
-environment = Environment(110, 5)
+visualize_genome(test_genome)
+environment = Environment(50, 5)
 _, fitness, weights, membrane_potentials, time_step = environment.simulate_with_visualization(agent)
 
 t_values = range(time_step + 1)

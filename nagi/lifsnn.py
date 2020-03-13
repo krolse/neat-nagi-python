@@ -5,7 +5,8 @@ import numpy as np
 
 from nagi.constants import IZ_MEMBRANE_POTENTIAL_THRESHOLD, STDP_PARAMS, STDP_LEARNING_WINDOW, NEURON_WEIGHT_BUDGET, \
     THRESHOLD_THETA_INCREMENT_RATE, THRESHOLD_THETA_DECAY_RATE, \
-    LIF_RESTING_MEMBRANE_POTENTIAL, LIF_TAU, LIF_NEURON_RESISTANCE, LIF_MEMBRANE_POTENTIAL_THRESHOLD, LIF_SPIKE_VOLTAGE
+    LIF_RESTING_MEMBRANE_POTENTIAL, LIF_TAU, LIF_NEURON_RESISTANCE, LIF_MEMBRANE_POTENTIAL_THRESHOLD, LIF_SPIKE_VOLTAGE, \
+    LIF_MEMBRANE_DECAY_RATE
 from nagi.neat import Genome, NeuralNodeGene, InputNodeGene, OutputNodeGene
 from nagi.stdp import *
 
@@ -60,7 +61,7 @@ class LIFSpikingNeuron(object):
         if self.membrane_potential > LIF_MEMBRANE_POTENTIAL_THRESHOLD + self.threshold_theta:
             self.fired = LIF_SPIKE_VOLTAGE if not self.is_inhibitory else -LIF_SPIKE_VOLTAGE
             self.has_fired = True
-            self.membrane_potential = 0
+            self.membrane_potential = LIF_RESTING_MEMBRANE_POTENTIAL
             self.threshold_theta += THRESHOLD_THETA_INCREMENT_RATE
             self.output_spike_timing = 0
 
@@ -157,7 +158,7 @@ class LIFSpikingNeuralNetwork(object):
         :return: List of the output values of the network after advance."""
 
         for neuron in self.neurons.values():
-            input_sum = 0
+            sum_of_inputs = 0
             for key, weight in neuron.inputs.items():
                 in_neuron = self.neurons.get(key)
                 if in_neuron is not None:
@@ -169,9 +170,8 @@ class LIFSpikingNeuralNetwork(object):
                 if in_value:
                     neuron.input_spike_timings[key].append(0)
 
-                input_sum += weight * in_value
-            # print((neuron.membrane_potential + input_sum * LIF_NEURON_RESISTANCE) / LIF_TAU * dt)
-            neuron.membrane_potential += (- neuron.membrane_potential*0.1 + input_sum * LIF_NEURON_RESISTANCE) / LIF_TAU * dt
+                sum_of_inputs += weight * in_value
+            neuron.membrane_potential += sum_of_inputs - neuron.membrane_potential * LIF_MEMBRANE_DECAY_RATE
             neuron.advance(dt)
 
         return [self.neurons[key].fired for key in self.outputs]
@@ -189,7 +189,8 @@ class LIFSpikingNeuralNetwork(object):
         return weights
 
     def get_membrane_potentials(self):
-        return {key: (neuron.membrane_potential, LIF_MEMBRANE_POTENTIAL_THRESHOLD + neuron.threshold_theta) for key, neuron
+        return {key: (neuron.membrane_potential, LIF_MEMBRANE_POTENTIAL_THRESHOLD + neuron.threshold_theta) for
+                key, neuron
                 in self.neurons.items()}
 
     @staticmethod
