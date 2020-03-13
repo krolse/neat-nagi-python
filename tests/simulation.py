@@ -5,14 +5,14 @@ import matplotlib.pyplot as plt
 
 import pickle
 
-with open('../data/test_genome.pkl', 'rb') as file:
+with open('../data/test_genome_2.pkl', 'rb') as file:
     test_genome = pickle.load(file)
 
 agent = Agent.create_agent(test_genome)
 for neuron in agent.spiking_neural_network.neurons.values():
     neuron.bias = 0
-visualize_genome(test_genome)
-environment = Environment(50, 5)
+visualize_genome(test_genome, True)
+environment = Environment(100, 5)
 _, fitness, weights, membrane_potentials, time_step = environment.simulate_with_visualization(agent)
 
 t_values = range(time_step + 1)
