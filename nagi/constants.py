@@ -29,7 +29,7 @@ LIF_TAU = LIF_NEURON_CAPACITANCE * LIF_NEURON_RESISTANCE
 ASYMMETRIC_HEBBIAN_PARAMS = {'a_plus': 1, 'a_minus': 1, 'tau_plus': 10, 'tau_minus': 10}
 SYMMETRIC_HEBBIAN_PARAMS = {'a_plus': 10.6, 'a_minus': 44.0, 'std_plus': 3.5, 'std_minus': 20}
 NEURON_WEIGHT_BUDGET = 5.0
-STDP_PARAMS = {'sigma': 0.1, 'w_max': 1.0, 'w_min': 0.0}
+STDP_PARAMS = {'sigma': 1.0, 'w_max': 1.0, 'w_min': 0.0}
 STDP_LEARNING_WINDOW = 40.0
 
 # NEAT

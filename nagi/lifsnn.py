@@ -47,8 +47,8 @@ class LIFSpikingNeuron(object):
         :param dt: Time step in milliseconds.
         """
 
-        if self.membrane_potential > LIF_MEMBRANE_POTENTIAL_THRESHOLD + self.threshold_theta:
-            self.threshold_theta += THRESHOLD_THETA_INCREMENT_RATE
+        if self.fired:
+            self.membrane_potential = LIF_RESTING_MEMBRANE_POTENTIAL
 
         self.fired = 0
         self.output_spike_timing += dt
@@ -61,10 +61,9 @@ class LIFSpikingNeuron(object):
             self.input_spike_timings[key] = [t + dt for t in self.input_spike_timings[key] if
                                              t + dt < STDP_LEARNING_WINDOW]
 
-        if self.membrane_potential > LIF_MEMBRANE_POTENTIAL_THRESHOLD + self.threshold_theta:
+        if self.membrane_potential > self._get_threshold() + self.threshold_theta:
             self.fired = LIF_SPIKE_VOLTAGE if not self.is_inhibitory else -LIF_SPIKE_VOLTAGE
             self.has_fired = True
-            self.membrane_potential = LIF_RESTING_MEMBRANE_POTENTIAL
             self.threshold_theta += THRESHOLD_THETA_INCREMENT_RATE
             self.output_spike_timing = 0
 
@@ -121,6 +120,9 @@ class LIFSpikingNeuron(object):
         if sum_of_input_weights > NEURON_WEIGHT_BUDGET:
             self.inputs = {key: value * NEURON_WEIGHT_BUDGET / sum_of_input_weights for key, value in
                            self.inputs.items()}
+
+    def _get_threshold(self):
+        return min(sum(self.inputs.values()), LIF_MEMBRANE_POTENTIAL_THRESHOLD)
 
 
 class LIFSpikingNeuralNetwork(object):

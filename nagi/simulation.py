@@ -26,9 +26,14 @@ class Agent(object):
         self.eat_actuator = 0
         self.avoid_actuator = 0
         self.health_points = MAX_HEALTH_POINTS
+        self.current_action = None
 
     def select_action(self):
-        return Action.EAT if self.eat_actuator > self.avoid_actuator else Action.AVOID
+        if self.eat_actuator > self.avoid_actuator:
+            self.current_action = Action.EAT
+        elif self.avoid_actuator > self.eat_actuator:
+            self.current_action = Action.AVOID
+        return self.current_action
 
     def reset_actuators(self):
         self.eat_actuator = 0
@@ -47,8 +52,6 @@ class Environment(object):
         self.beneficial_food = random.choice([value for value in Food])
         self.maximum_possible_lifetime = int((len(self.food_loadout) * NUM_TIME_STEPS) / DAMAGE_FROM_CORRECT_ACTION)
         self.minimum_lifetime = int((len(self.food_loadout) * NUM_TIME_STEPS) / DAMAGE_FROM_INCORRECT_ACTION)
-        print(self.maximum_possible_lifetime)
-        print(self.minimum_lifetime)
 
     def mutate(self):
         self.beneficial_food = Food.WHITE if self.beneficial_food is Food.BLACK else Food.BLACK
@@ -71,6 +74,8 @@ class Environment(object):
         avoid_actuator = []
         inputs = self._get_initial_input_voltages()
         for i, sample in enumerate(self.food_loadout):
+            eat_actuator = [t for t in eat_actuator if t >= NUM_TIME_STEPS * (i - 1)]
+            avoid_actuator = [t for t in avoid_actuator if t >= NUM_TIME_STEPS * (i - 1)]
             frequencies = self._get_initial_input_frequencies(sample)
             if i >= FLIP_POINT and i % FLIP_POINT == 0:
                 print(10 * "=")
@@ -108,6 +113,9 @@ class Environment(object):
 
         inputs = self._get_initial_input_voltages()
         for i, sample in enumerate(self.food_loadout):
+            eat_actuator = [t for t in eat_actuator if t >= NUM_TIME_STEPS * (i - 1)]
+            avoid_actuator = [t for t in avoid_actuator if t >= NUM_TIME_STEPS * (i - 1)]
+
             frequencies = self._get_initial_input_frequencies(sample)
             if i >= FLIP_POINT and i % FLIP_POINT == 0:
                 print(10 * "=")
