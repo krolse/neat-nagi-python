@@ -21,7 +21,7 @@ agent.spiking_neural_network.neurons[7].inputs[6] = 0.2
 for neuron in agent.spiking_neural_network.neurons.values():
     neuron.bias = 0
 visualize_genome(test_genome, True)
-environment = Environment(100, 5)
+environment = Environment(50, 5)
 _, fitness, weights, membrane_potentials, time_step = environment.simulate_with_visualization(agent)
 
 t_values = range(time_step + 1)

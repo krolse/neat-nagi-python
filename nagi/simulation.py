@@ -104,7 +104,7 @@ class Environment(object):
                                     agent.select_action() is Action.EAT and sample is self.beneficial_food) or (
                                     agent.select_action() is Action.AVOID and sample is not self.beneficial_food) \
                                 else "WRONG"
-            print(f'Agent health: {agent.health_points}, i={i}, beneficial food: {self.beneficial_food}, sample: {sample}, action: {agent.select_action()} {str_correct_wrong}')
+            print(f'Agent health: {int(agent.health_points)}, i={i}, beneficial food: {self.beneficial_food}, sample: {sample}, action: {agent.select_action()} {str_correct_wrong}')
             print(f'Eat: {agent.eat_actuator}, Avoid: {agent.avoid_actuator}')
         return agent.key, self._fitness(self.maximum_possible_lifetime)
 
@@ -148,7 +148,7 @@ class Environment(object):
                                     agent.select_action() is Action.EAT and sample is self.beneficial_food) or (
                                     agent.select_action() is Action.AVOID and sample is not self.beneficial_food) \
                                 else "WRONG"
-            print(f'Agent health: {agent.health_points}, i={i}, beneficial food: {self.beneficial_food}, sample: {sample}, action: {agent.select_action()} {str_correct_wrong}')
+            print(f'Agent health: {int(agent.health_points)}, i={i}, beneficial food: {self.beneficial_food}, sample: {sample}, action: {agent.select_action()} {str_correct_wrong}')
             print(f'Eat: {agent.eat_actuator}, Avoid: {agent.avoid_actuator}')
         return agent.key, self._fitness(self.maximum_possible_lifetime), weights, membrane_potentials, self.maximum_possible_lifetime
 
