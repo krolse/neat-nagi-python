@@ -77,7 +77,7 @@ class NeuralNodeGene(NodeGene):
     @staticmethod
     def _initialize_symmetric_stdp_parameters():
         a_plus = np.random.uniform(*SYMMETRIC_A_PLUS_INIT_RANGE)
-        a_minus = np.random.uniform(*SYMMETRIC_A_MINUS_INIT_RANGE)
+        a_minus = np.random.uniform(a_plus, SYMMETRIC_A_MINUS_INIT_RANGE[1])
         std_plus, std_minus = sorted(np.random.uniform(*SYMMETRIC_STD_INIT_RANGE, 2))
         return {'a_plus': a_plus, 'a_minus': a_minus, 'std_plus': std_plus, 'std_minus': std_minus}
 
