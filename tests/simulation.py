@@ -1,14 +1,14 @@
+from nagi.constants import FLIP_POINT, NUM_TIME_STEPS
 from nagi.simulation import Environment, Agent
 from nagi.visualization import visualize_genome
 import matplotlib.pyplot as plt
-
 
 import pickle
 
 with open('../data/test_genome.pkl', 'rb') as file:
     test_genome = pickle.load(file)
 
-for i in [4,6,7]:
+for i in [4, 6, 7]:
     test_genome.nodes[i].stdp_parameters['std_minus'] = 20
     test_genome.nodes[i].stdp_parameters['std_plus'] = 10
     test_genome.nodes[i].stdp_parameters['a_plus'] = 5
@@ -37,6 +37,10 @@ for i, key in enumerate(membrane_potentials.keys()):
     plt.xlabel("Time (in ms)")
     plt.plot(t_values, [membrane_potential[0] for membrane_potential in membrane_potentials[key]], 'g-')
     plt.plot(t_values, [membrane_potential[1] for membrane_potential in membrane_potentials[key]], 'r-')
+    flip_points = [i for i in range(len(membrane_potentials[key])) if
+                   i >= FLIP_POINT * NUM_TIME_STEPS and i % (FLIP_POINT * NUM_TIME_STEPS) == 0]
+    for flip_point in flip_points:
+        plt.axvline(x=flip_point)
 
 # Weights
 fig = plt.figure()
@@ -46,6 +50,10 @@ for i, key in enumerate(weights.keys()):
     plt.ylabel(f"{key}")
     plt.xlabel("Time (in ms)")
     plt.plot(t_values, weights[key], 'b-')
+    flip_points = [i for i in range(len(weights[key])) if
+                   i >= FLIP_POINT * NUM_TIME_STEPS and i % (FLIP_POINT * NUM_TIME_STEPS) == 0]
+    for flip_point in flip_points:
+        plt.axvline(x=flip_point)
 
 plt.show()
 print(f'Fitness: {fitness}')
