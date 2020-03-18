@@ -60,14 +60,17 @@ class Environment(object):
         action = agent.select_action()
         if action is Action.EAT:
             if sample is self.beneficial_food:
-                agent.health_points -= DAMAGE_FROM_CORRECT_ACTION
+                damage = DAMAGE_FROM_CORRECT_ACTION
             else:
-                agent.health_points -= DAMAGE_FROM_INCORRECT_ACTION
+                damage = DAMAGE_FROM_INCORRECT_ACTION
         elif action is Action.AVOID:
             if sample is self.beneficial_food:
-                agent.health_points -= DAMAGE_FROM_INCORRECT_ACTION
+                damage = DAMAGE_FROM_INCORRECT_ACTION
             else:
-                agent.health_points -= DAMAGE_FROM_CORRECT_ACTION
+                damage = DAMAGE_FROM_CORRECT_ACTION
+        else:
+            damage = DAMAGE_FROM_INCORRECT_ACTION
+        agent.health_points -= damage * 1.01**agent.spiking_neural_network.number_of_hidden_neurons
 
     def simulate(self, agent: Agent) -> Tuple[int, float]:
         eat_actuator = []

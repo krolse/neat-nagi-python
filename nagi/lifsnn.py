@@ -49,6 +49,7 @@ class LIFSpikingNeuron(object):
 
         if self.fired:
             self.membrane_potential = LIF_RESTING_MEMBRANE_POTENTIAL
+            self.threshold_theta += THRESHOLD_THETA_INCREMENT_RATE
 
         self.fired = 0
         self.output_spike_timing += dt
@@ -64,7 +65,6 @@ class LIFSpikingNeuron(object):
         if self.membrane_potential > self._get_threshold() + self.threshold_theta:
             self.fired = LIF_SPIKE_VOLTAGE if not self.is_inhibitory else -LIF_SPIKE_VOLTAGE
             self.has_fired = True
-            self.threshold_theta += THRESHOLD_THETA_INCREMENT_RATE
             self.output_spike_timing = 0
 
             # STDP on output spike.
@@ -140,6 +140,7 @@ class LIFSpikingNeuralNetwork(object):
         self.inputs = inputs
         self.outputs = outputs
         self.input_values: Dict[int, float] = {}
+        self.number_of_hidden_neurons = len(self.neurons) - len(outputs)
 
     def set_inputs(self, inputs: List[float]):
         """
@@ -177,6 +178,8 @@ class LIFSpikingNeuralNetwork(object):
 
                 sum_of_inputs += weight * in_value
             neuron.membrane_potential += sum_of_inputs - neuron.membrane_potential * LIF_MEMBRANE_DECAY_RATE
+
+        for neuron in self.neurons.values():
             neuron.advance(dt)
 
         return [self.neurons[key].fired for key in self.outputs]

@@ -167,6 +167,7 @@ class SpikingNeuralNetwork(object):
         self.inputs = inputs
         self.outputs = outputs
         self.input_values: Dict[int, float] = {}
+        self.number_of_hidden_neurons = len(self.neurons) - len(outputs)
 
     def set_inputs(self, inputs: List[float]):
         """
@@ -203,6 +204,8 @@ class SpikingNeuralNetwork(object):
                     neuron.input_spike_timings[key].append(0)
 
                 neuron.current += in_value * weight
+
+        for neuron in self.neurons.values():
             neuron.advance(dt)
 
         return [self.neurons[key].fired for key in self.outputs]
