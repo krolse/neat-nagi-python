@@ -1,7 +1,7 @@
 import pickle
 
 from nagi.neat import Population
-from nagi.simulation import Environment, Agent
+from nagi.simulation import OneDimensionalEnvironment, OneDimensionalAgent
 import multiprocessing as mp
 
 if __name__ == '__main__':
@@ -12,8 +12,8 @@ if __name__ == '__main__':
 
     for i in range(10):
         print(f'Generation {i}...')
-        env = Environment(300, 5)
-        results = pool.map(env.simulate, [Agent.create_agent(genome) for genome in pop.genomes.values()])
+        env = OneDimensionalEnvironment(300, 5)
+        results = pool.map(env.simulate, [OneDimensionalAgent.create_agent(genome) for genome in pop.genomes.values()])
         fitnesses = {result[0]: result[1] for result in results}
 
         max_fitnesses.append(max(fitnesses.values()))

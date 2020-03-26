@@ -1,5 +1,5 @@
 from nagi.constants import FLIP_POINT, NUM_TIME_STEPS
-from nagi.simulation import Environment, Agent
+from nagi.simulation import OneDimensionalEnvironment, OneDimensionalAgent
 from nagi.visualization import visualize_genome
 import matplotlib.pyplot as plt
 
@@ -16,12 +16,12 @@ for i in [4, 6, 7]:
 
     print(test_genome.nodes[i].stdp_parameters)
 
-agent = Agent.create_agent(test_genome)
+agent = OneDimensionalAgent.create_agent(test_genome)
 agent.spiking_neural_network.neurons[7].inputs[6] = 0.2
 for neuron in agent.spiking_neural_network.neurons.values():
     neuron.bias = 0
 visualize_genome(test_genome, True)
-environment = Environment(50, 5)
+environment = OneDimensionalEnvironment(50, 5)
 _, fitness, weights, membrane_potentials, time_step = environment.simulate_with_visualization(agent)
 
 t_values = range(time_step + 1)
@@ -31,7 +31,7 @@ number_of_weights = len(weights.keys())
 # Membrane potential
 fig = plt.figure()
 plt.title("Neuron membrane potentials")
-for i, key in enumerate(membrane_potentials.keys()):
+for i, key in enumerate(sorted(membrane_potentials.keys())):
     plt.subplot(number_of_neurons, 1, i + 1)
     plt.ylabel(f"{key}")
     plt.xlabel("Time (in ms)")
@@ -45,7 +45,7 @@ for i, key in enumerate(membrane_potentials.keys()):
 # Weights
 fig = plt.figure()
 plt.title("Weights")
-for i, key in enumerate(weights.keys()):
+for i, key in enumerate(sorted(weights.keys(), key=lambda x: x[1])):
     plt.subplot(number_of_weights, 1, i + 1)
     plt.ylabel(f"{key}")
     plt.xlabel("Time (in ms)")
@@ -55,5 +55,5 @@ for i, key in enumerate(weights.keys()):
     for flip_point in flip_points:
         plt.axvline(x=flip_point)
 
-plt.show()
 print(f'Fitness: {fitness}')
+plt.show()
