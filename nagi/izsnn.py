@@ -67,11 +67,17 @@ class SpikingNeuron(object):
         :param dt: Time step in milliseconds.
         """
 
-        v = self.membrane_potential
-        u = self.membrane_recovery
+        if self.fired:
+            self.membrane_potential = self.c
+            self.membrane_recovery += self.d
+            self.threshold_theta += THRESHOLD_THETA_INCREMENT_RATE
 
-        self.membrane_potential += dt * (0.04 * v ** 2 + 5 * v + 140 - u + self.current)
-        self.membrane_recovery += dt * self.a * (self.b * v - u)
+        else:
+            v = self.membrane_potential
+            u = self.membrane_recovery
+
+            self.membrane_potential += dt * (0.04 * v ** 2 + 5 * v + 140 - u + self.current)
+            self.membrane_recovery += dt * self.a * (self.b * v - u)
 
         self.fired = 0
         self.output_spike_timing += dt
@@ -87,17 +93,13 @@ class SpikingNeuron(object):
         if self.membrane_potential > IZ_MEMBRANE_POTENTIAL_THRESHOLD + self.threshold_theta:
             self.fired = IZ_SPIKE_VOLTAGE if not self.is_inhibitory else -IZ_SPIKE_VOLTAGE
             self.has_fired = True
-            self.membrane_potential = self.c
-            self.membrane_recovery += self.d
-            self.threshold_theta *= THRESHOLD_THETA_INCREMENT_RATE * ((MAX_THRESHOLD_THETA - self.threshold_theta) /
-                                                                      MAX_THRESHOLD_THETA)
             self.output_spike_timing = 0
 
             # STDP on output spike.
             for key in self.input_spike_timings.keys():
                 self.stpd_update(key, StdpType.output)
         else:
-            self.threshold_theta *= (1 - THRESHOLD_THETA_DECAY_RATE)
+            self.threshold_theta -= THRESHOLD_THETA_DECAY_RATE * self.threshold_theta
 
     def reset(self):
         """ Resets all state variables."""
