@@ -12,9 +12,10 @@ from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, ADD_N
     LEARNING_RULE_MUTATE_RATE, PREDETERMINED_DISABLED_RATE, INITIAL_CONNECTION_RATE, SPECIES_COMPATIBILITY_THRESHOLD, \
     MATING_CUTTOFF_PERCENTAGE, ELITISM, STDP_PARAMETERS_MUTATE_RATE, STDP_PARAMETERS_REINIT_RATE, \
     INHIBITORY_PROBABILITIES, EXCITATORY_PROBABILITIES, SYMMETRIC_A_PLUS_INIT_RANGE, SYMMETRIC_A_MINUS_INIT_RANGE, \
-    SYMMETRIC_STD_INIT_RANGE, ASYMMETRIC_A_INIT_RANGE, ASYMMETRIC_TAU_INIT_RANGE, SYMMETRIC_A_PLUS_MUTATE_SCALE, \
-    SYMMETRIC_A_MINUS_MUTATE_SCALE, SYMMETRIC_STD_MUTATE_SCALE, ASYMMETRIC_A_MUTATE_SCALE, ASYMMETRIC_TAU_MUTATE_SCALE, \
-    SPECIES_PROTECTION_LIMIT, SPECIES_STAGNATION_LIMIT
+    SYMMETRIC_STD_PLUS_INIT_RANGE, ASYMMETRIC_A_INIT_RANGE, ASYMMETRIC_TAU_INIT_RANGE, SYMMETRIC_A_PLUS_MUTATE_SCALE, \
+    SYMMETRIC_A_MINUS_MUTATE_SCALE, SYMMETRIC_STD_PLUS_MUTATE_SCALE, ASYMMETRIC_A_MUTATE_SCALE, \
+    ASYMMETRIC_TAU_MUTATE_SCALE, SPECIES_PROTECTION_LIMIT, SPECIES_STAGNATION_LIMIT, SYMMETRIC_STD_MINUS_INIT_RANGE, \
+    SYMMETRIC_STD_MINUS_MUTATE_SCALE
 
 
 class LearningRule(Enum):
@@ -78,7 +79,8 @@ class NeuralNodeGene(NodeGene):
     def _initialize_symmetric_stdp_parameters():
         a_plus = np.random.uniform(*SYMMETRIC_A_PLUS_INIT_RANGE)
         a_minus = np.random.uniform(*SYMMETRIC_A_MINUS_INIT_RANGE)
-        std_plus, std_minus = sorted(np.random.uniform(*SYMMETRIC_STD_INIT_RANGE, 2))
+        std_plus = np.random.uniform(*SYMMETRIC_STD_PLUS_INIT_RANGE)
+        std_minus = np.random.uniform(*SYMMETRIC_STD_MINUS_INIT_RANGE)
         return {'a_plus': a_plus, 'a_minus': a_minus, 'std_plus': std_plus, 'std_minus': std_minus}
 
     @staticmethod
@@ -92,9 +94,10 @@ class NeuralNodeGene(NodeGene):
                          *SYMMETRIC_A_PLUS_INIT_RANGE)
         a_minus = np.clip(self.stdp_parameters['a_plus'] + np.random.normal(0, SYMMETRIC_A_MINUS_MUTATE_SCALE),
                           *SYMMETRIC_A_MINUS_INIT_RANGE)
-        std_plus, std_minus = sorted(
-            (np.clip(self.stdp_parameters[key] + np.random.normal(0, SYMMETRIC_STD_MUTATE_SCALE),
-                     *SYMMETRIC_STD_INIT_RANGE) for key in ('std_plus', 'std_minus')))
+        std_plus = np.clip(self.stdp_parameters['std_plus'] + np.random.normal(0, SYMMETRIC_STD_PLUS_MUTATE_SCALE),
+                           *SYMMETRIC_STD_PLUS_INIT_RANGE)
+        std_minus = np.clip(self.stdp_parameters['std_plus'] + np.random.normal(0, SYMMETRIC_STD_MINUS_MUTATE_SCALE),
+                            *SYMMETRIC_STD_MINUS_INIT_RANGE)
         self.stdp_parameters = {'a_plus': a_plus, 'a_minus': a_minus, 'std_plus': std_plus, 'std_minus': std_minus}
 
     def _mutate_asymmetric_stdp_parameters(self):
