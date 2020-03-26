@@ -70,7 +70,7 @@ class Environment(object):
                 damage = DAMAGE_FROM_CORRECT_ACTION
         else:
             damage = DAMAGE_FROM_INCORRECT_ACTION
-        agent.health_points -= damage * 1.01**agent.spiking_neural_network.number_of_hidden_neurons
+        agent.health_points -= damage * 1.05**agent.spiking_neural_network.number_of_hidden_neurons
 
     def simulate(self, agent: Agent) -> Tuple[int, float]:
         eat_actuator = []
