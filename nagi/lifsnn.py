@@ -3,8 +3,10 @@ from typing import List, Dict
 
 import numpy as np
 
-from nagi.constants import MEMBRANE_POTENTIAL_THRESHOLD, STDP_PARAMS, STDP_LEARNING_WINDOW, NEURON_WEIGHT_BUDGET, \
-    THRESHOLD_THETA_INCREMENT_RATE, THRESHOLD_THETA_DECAY_RATE, MAX_THRESHOLD_THETA
+from nagi.constants import IZ_MEMBRANE_POTENTIAL_THRESHOLD, STDP_PARAMS, STDP_LEARNING_WINDOW, NEURON_WEIGHT_BUDGET, \
+    THRESHOLD_THETA_INCREMENT_RATE, THRESHOLD_THETA_DECAY_RATE, \
+    LIF_RESTING_MEMBRANE_POTENTIAL, LIF_TAU, LIF_NEURON_RESISTANCE, LIF_MEMBRANE_POTENTIAL_THRESHOLD, LIF_SPIKE_VOLTAGE, \
+    LIF_MEMBRANE_DECAY_RATE
 from nagi.neat import Genome, NeuralNodeGene, InputNodeGene, OutputNodeGene
 from nagi.stdp import *
 
@@ -14,36 +16,23 @@ class StdpType(Enum):
     output = 2
 
 
-class SpikingNeuron(object):
+class LIFSpikingNeuron(object):
     """Class representing a single spiking neuron."""
 
-    def __init__(self, bias: float, a: float, b: float, c: float, d: float, inputs: List[int],
-                 learning_rule: LearningRule, stdp_parameters: Dict[str, float]):
+    def __init__(self, inputs: List[int], learning_rule: LearningRule, is_inhibitory: bool,
+                 stdp_parameters: Dict[str, float]):
         """
-        a, b, c, and d are the parameters of the Izhikevich model.
-
-        :param bias: The bias of the neuron.
-        :param a: The time-scale of the recovery variable.
-        :param b: The sensitivity of the recovery variable.
-        :param c: The after-spike reset value of the membrane potential.
-        :param d: The after-spike reset value of the recovery variable.
         :param inputs: A dictionary of incoming connection weights.
         """
 
-        self.bias = bias
-        self.a = a
-        self.b = b
-        self.c = c
-        self.d = d
-        self.inputs = {key: np.random.random() for key in inputs}
+        self.inputs = {key: np.random.normal(0.5, 0.1) for key in inputs}
         self._normalize_weights()
         self.learning_rule = learning_rule
+        self.is_inhibitory = is_inhibitory
         self.stdp_parameters = stdp_parameters
 
-        self.membrane_potential = self.c
-        self.membrane_recovery = self.b * self.membrane_potential
+        self.membrane_potential = LIF_RESTING_MEMBRANE_POTENTIAL
         self.fired = 0
-        self.current = self.bias
         self.threshold_theta = 0
 
         # Variables containing time elapsed since last input and output spikes.
@@ -55,22 +44,12 @@ class SpikingNeuron(object):
         """
         Advances simulation time by the given time step in milliseconds.
 
-        Update of membrane potential "v" and membrane recovery "u" given by formulas:
-            v += dt * (0.04 * v^2 + 5v + 140 - u + I)
-            u += dt * a * (b * v - u)
-
-        Once membrane potential exceeds threshold:
-            v = c
-            u = u + d
-
         :param dt: Time step in milliseconds.
         """
 
-        v = self.membrane_potential
-        u = self.membrane_recovery
-
-        self.membrane_potential += dt * (0.04 * v ** 2 + 5 * v + 140 - u + self.current)
-        self.membrane_recovery += dt * self.a * (self.b * v - u)
+        if self.fired:
+            self.membrane_potential = LIF_RESTING_MEMBRANE_POTENTIAL
+            self.threshold_theta += THRESHOLD_THETA_INCREMENT_RATE
 
         self.fired = 0
         self.output_spike_timing += dt
@@ -83,30 +62,22 @@ class SpikingNeuron(object):
             self.input_spike_timings[key] = [t + dt for t in self.input_spike_timings[key] if
                                              t + dt < STDP_LEARNING_WINDOW]
 
-        if self.membrane_potential > MEMBRANE_POTENTIAL_THRESHOLD + self.threshold_theta:
-            self.fired = 1
+        if self.membrane_potential > self._get_threshold() + self.threshold_theta:
+            self.fired = LIF_SPIKE_VOLTAGE if not self.is_inhibitory else -LIF_SPIKE_VOLTAGE
             self.has_fired = True
-            self.membrane_potential = self.c
-            self.membrane_recovery += self.d
-            self.threshold_theta *= THRESHOLD_THETA_INCREMENT_RATE * ((MAX_THRESHOLD_THETA - self.threshold_theta) /
-                                                                      MAX_THRESHOLD_THETA)
             self.output_spike_timing = 0
 
             # STDP on output spike.
             for key in self.input_spike_timings.keys():
                 self.stpd_update(key, StdpType.output)
         else:
-            self.threshold_theta *= (1 - THRESHOLD_THETA_DECAY_RATE)
+            self.threshold_theta -= THRESHOLD_THETA_DECAY_RATE * self.threshold_theta
 
     def reset(self):
         """ Resets all state variables."""
 
-        self.membrane_potential = self.c
-        self.membrane_recovery = self.b * self.membrane_potential
-
+        self.membrane_potential = LIF_RESTING_MEMBRANE_POTENTIAL
         self.fired = 0
-        self.current = self.bias
-
         self.output_spike_timing = 0
         self.input_spike_timings = {key: 0 for key in self.inputs.keys()}
 
@@ -150,11 +121,14 @@ class SpikingNeuron(object):
             self.inputs = {key: value * NEURON_WEIGHT_BUDGET / sum_of_input_weights for key, value in
                            self.inputs.items()}
 
+    def _get_threshold(self):
+        return min(sum(self.inputs.values()), LIF_MEMBRANE_POTENTIAL_THRESHOLD)
 
-class SpikingNeuralNetwork(object):
+
+class LIFSpikingNeuralNetwork(object):
     """Class representing a spiking neural network."""
 
-    def __init__(self, neurons: Dict[int, SpikingNeuron], inputs: List[int], outputs: List[int]):
+    def __init__(self, neurons: Dict[int, LIFSpikingNeuron], inputs: List[int], outputs: List[int]):
         """
         :param neurons: Dictionary containing key/node pairs.
         :param inputs: List of input node keys.
@@ -166,6 +140,7 @@ class SpikingNeuralNetwork(object):
         self.inputs = inputs
         self.outputs = outputs
         self.input_values: Dict[int, float] = {}
+        self.number_of_hidden_neurons = len(self.neurons) - len(outputs)
 
     def set_inputs(self, inputs: List[float]):
         """
@@ -189,7 +164,7 @@ class SpikingNeuralNetwork(object):
         :return: List of the output values of the network after advance."""
 
         for neuron in self.neurons.values():
-            neuron.current = neuron.bias
+            sum_of_inputs = 0
             for key, weight in neuron.inputs.items():
                 in_neuron = self.neurons.get(key)
                 if in_neuron is not None:
@@ -201,8 +176,11 @@ class SpikingNeuralNetwork(object):
                 if in_value:
                     neuron.input_spike_timings[key].append(0)
 
-                neuron.current += in_value * weight
-                neuron.advance(dt)
+                sum_of_inputs += weight * in_value
+            neuron.membrane_potential += sum_of_inputs - neuron.membrane_potential * LIF_MEMBRANE_DECAY_RATE
+
+        for neuron in self.neurons.values():
+            neuron.advance(dt)
 
         return [self.neurons[key].fired for key in self.outputs]
 
@@ -211,8 +189,20 @@ class SpikingNeuralNetwork(object):
         for neuron in self.neurons.values():
             neuron.reset()
 
+    def get_weights(self):
+        weights = {}
+        for destination_key, neuron in self.neurons.items():
+            for origin_key, weight in neuron.inputs.items():
+                weights[(origin_key, destination_key)] = weight
+        return weights
+
+    def get_membrane_potentials(self):
+        return {key: (neuron.membrane_potential, LIF_MEMBRANE_POTENTIAL_THRESHOLD + neuron.threshold_theta) for
+                key, neuron
+                in self.neurons.items()}
+
     @staticmethod
-    def create(genome: Genome, bias: float, a: float, b: float, c: float, d: float):
+    def create(genome: Genome):
         learning_nodes = {key: node for key, node in genome.nodes.items() if isinstance(node, NeuralNodeGene)}
         node_inputs = {key: [] for key in learning_nodes.keys()}
         input_keys = [node.key for node in genome.nodes.values() if isinstance(node, InputNodeGene)]
@@ -221,8 +211,8 @@ class SpikingNeuralNetwork(object):
         for connection_gene in genome.get_enabled_connections():
             node_inputs[connection_gene.destination_node].append(connection_gene.origin_node)
 
-        neurons = {key: SpikingNeuron(bias, a, b, c, d, inputs, learning_nodes[key].learning_rule,
-                                      learning_nodes[key].stdp_parameters)
+        neurons = {key: LIFSpikingNeuron(inputs, learning_nodes[key].learning_rule,
+                                         learning_nodes[key].is_inhibitory, learning_nodes[key].stdp_parameters)
                    for key, inputs in node_inputs.items()}
 
-        return SpikingNeuralNetwork(neurons, input_keys, output_keys)
+        return LIFSpikingNeuralNetwork(neurons, input_keys, output_keys)
