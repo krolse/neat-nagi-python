@@ -2,8 +2,8 @@ from enum import Enum
 from itertools import cycle
 from typing import List, Tuple
 
-from nagi.constants import TIME_STEP_IN_MSEC, MAX_HEALTH_POINTS, DAMAGE_FROM_AVOIDING_FOOD, FLIP_POINT_1D, \
-    DAMAGE_FROM_EATING_WRONG_FOOD, ACTUATOR_WINDOW, LIF_SPIKE_VOLTAGE, NUM_TIME_STEPS, DAMAGE_FROM_CORRECT_ACTION, \
+from nagi.constants import TIME_STEP_IN_MSEC, MAX_HEALTH_POINTS, FLIP_POINT_1D, \
+    ACTUATOR_WINDOW, LIF_SPIKE_VOLTAGE, NUM_TIME_STEPS, DAMAGE_FROM_CORRECT_ACTION, \
     DAMAGE_FROM_INCORRECT_ACTION, FOOD_SAMPLES_PER_SIMULATION
 from nagi.lifsnn import LIFSpikingNeuralNetwork
 from nagi.neat import Genome
@@ -193,19 +193,6 @@ class OneDimensionalEnvironment(object):
 
     def _fitness(self, lifetime: int):
         return (lifetime - self.minimum_lifetime) / (self.maximum_possible_lifetime - self.minimum_lifetime)
-
-    def _get_minimum_lifetime(self):
-        beneficial_food = self.beneficial_food
-        mock_health = MAX_HEALTH_POINTS
-        for i, food in enumerate(self.food_loadout):
-            if i >= FLIP_POINT_1D and i % FLIP_POINT_1D == 0:
-                beneficial_food = Food.WHITE if beneficial_food == Food.BLACK else Food.BLACK
-            if food is beneficial_food:
-                mock_health -= DAMAGE_FROM_AVOIDING_FOOD
-            else:
-                mock_health -= DAMAGE_FROM_EATING_WRONG_FOOD
-            if mock_health <= 0:
-                return i
 
     @staticmethod
     def _get_input_voltages(time_step: int, frequencies: List[int]):

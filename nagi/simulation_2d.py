@@ -170,8 +170,8 @@ class TwoDimensionalEnvironment(object):
         zero_count = TwoDimensionalEnvironment._count_spikes_within_time_window(time_step, zero_actuator)
         one_count = TwoDimensionalEnvironment._count_spikes_within_time_window(time_step, one_actuator)
 
-        return [*self._encode_sample(sample), *self._encode_reward(sample, zero_count, one_count,
-                                                                   previous_reward_frequencies)]
+        return [*self._encode_sample(sample),
+                *self._encode_reward(sample, zero_count, one_count, previous_reward_frequencies)]
 
     def _get_initial_input_frequencies(self, sample: Tuple[int, int]):
         return [*self._encode_sample(sample), self.low_frequency, self.low_frequency]
