@@ -1,7 +1,7 @@
 import pickle
 
 from nagi.neat import Population
-from nagi.simulation import OneDimensionalEnvironment, OneDimensionalAgent
+from nagi.simulation_1d import OneDimensionalEnvironment, OneDimensionalAgent
 import multiprocessing as mp
 
 if __name__ == '__main__':

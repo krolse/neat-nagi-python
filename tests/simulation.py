@@ -1,5 +1,5 @@
 from nagi.constants import FLIP_POINT, NUM_TIME_STEPS
-from nagi.simulation import OneDimensionalEnvironment, OneDimensionalAgent
+from nagi.simulation_1d import OneDimensionalEnvironment, OneDimensionalAgent
 from nagi.visualization import visualize_genome
 import matplotlib.pyplot as plt
 
