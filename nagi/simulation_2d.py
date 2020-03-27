@@ -1,6 +1,7 @@
 import random
 from enum import Enum
 from typing import List, Tuple
+from itertools import cycle
 
 from nagi.constants import TIME_STEP_IN_MSEC, MAX_HEALTH_POINTS, DAMAGE_FROM_AVOIDING_FOOD, FLIP_POINT, \
     DAMAGE_FROM_EATING_WRONG_FOOD, ACTUATOR_WINDOW, LIF_SPIKE_VOLTAGE, NUM_TIME_STEPS, DAMAGE_FROM_CORRECT_ACTION, \
@@ -57,12 +58,13 @@ class TwoDimensionalEnvironment(object):
         self.high_frequency = TwoDimensionalEnvironment._generate_spike_frequency(high_frequency)
         self.low_frequency = TwoDimensionalEnvironment._generate_spike_frequency(low_frequency)
         self.food_loadout = TwoDimensionalEnvironment._initialize_food_loadout()
-        self.current_logic_gate: LogicGate = random.choice([value for value in LogicGate])
+        self.logic_gate_iterator = cycle(LogicGate)
+        self.current_logic_gate = next(self.logic_gate_iterator)
         self.maximum_possible_lifetime = int((len(self.food_loadout) * NUM_TIME_STEPS) / DAMAGE_FROM_CORRECT_ACTION)
         self.minimum_lifetime = int((len(self.food_loadout) * NUM_TIME_STEPS) / DAMAGE_FROM_INCORRECT_ACTION)
 
     def mutate(self):
-        self.current_logic_gate = Food.WHITE if self.current_logic_gate is Food.BLACK else Food.BLACK
+        self.current_logic_gate = next(self.logic_gate_iterator)
 
     def deal_damage(self, agent: TwoDimensionalAgent, sample: Tuple[int, int]):
         prediction = agent.select_prediction()
@@ -116,7 +118,7 @@ class TwoDimensionalEnvironment(object):
             print(f'Eat: {agent.eat_actuator}, Avoid: {agent.avoid_actuator}')
         return agent.key, self._fitness(self.maximum_possible_lifetime)
 
-    def simulate_with_visualization(self, agent: OneDimensionalAgent) -> Tuple[int, float, dict, dict, int]:
+    def simulate_with_visualization(self, agent: TwoDimensionalAgent) -> Tuple[int, float, dict, dict, int]:
         eat_actuator = []
         avoid_actuator = []
         weights = {key: [] for key, _ in agent.spiking_neural_network.get_weights().items()}

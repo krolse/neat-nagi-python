@@ -1,5 +1,5 @@
-import random
 from enum import Enum
+from itertools import cycle
 from typing import List, Tuple
 
 from nagi.constants import TIME_STEP_IN_MSEC, MAX_HEALTH_POINTS, DAMAGE_FROM_AVOIDING_FOOD, FLIP_POINT, \
@@ -10,8 +10,8 @@ from nagi.neat import Genome
 
 
 class Food(Enum):
-    WHITE = 1
-    BLACK = 2
+    BLACK = 1
+    WHITE = 2
 
 
 class Action(Enum):
@@ -48,13 +48,14 @@ class OneDimensionalEnvironment(object):
     def __init__(self, high_frequency: int, low_frequency: int):
         self.high_frequency = OneDimensionalEnvironment._generate_spike_frequency(high_frequency)
         self.low_frequency = OneDimensionalEnvironment._generate_spike_frequency(low_frequency)
+        self.beneficial_food_iterator = cycle(Food)
+        self.beneficial_food = next(self.beneficial_food_iterator)
         self.food_loadout = OneDimensionalEnvironment._initialize_food_loadout()
-        self.beneficial_food = random.choice([value for value in Food])
         self.maximum_possible_lifetime = int((len(self.food_loadout) * NUM_TIME_STEPS) / DAMAGE_FROM_CORRECT_ACTION)
         self.minimum_lifetime = int((len(self.food_loadout) * NUM_TIME_STEPS) / DAMAGE_FROM_INCORRECT_ACTION)
 
     def mutate(self):
-        self.beneficial_food = Food.WHITE if self.beneficial_food is Food.BLACK else Food.BLACK
+        self.beneficial_food = next(self.beneficial_food_iterator)
 
     def deal_damage(self, agent: OneDimensionalAgent, sample: Food):
         action = agent.select_action()
@@ -154,8 +155,7 @@ class OneDimensionalEnvironment(object):
 
     @staticmethod
     def _initialize_food_loadout():
-        return random.sample([Food.BLACK] * int(FOOD_SAMPLES_PER_SIMULATION / 2) +
-                             [Food.WHITE] * int(FOOD_SAMPLES_PER_SIMULATION / 2), FOOD_SAMPLES_PER_SIMULATION)
+        return [*[color for color in Food] * int(FOOD_SAMPLES_PER_SIMULATION / Food.__len__())]
 
     def _get_input_frequencies(self, time_step: int, sample: Food, eat_actuator: List[int], avoid_actuator: List[int],
                                previous_reward_frequencies: List[int]) -> List[int]:
