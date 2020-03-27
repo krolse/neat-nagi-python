@@ -62,7 +62,7 @@ class LIFSpikingNeuron(object):
             self.input_spike_timings[key] = [t + dt for t in self.input_spike_timings[key] if
                                              t + dt < STDP_LEARNING_WINDOW]
 
-        if self.membrane_potential > self._get_threshold() + self.threshold_theta:
+        if self.membrane_potential > self.get_threshold() + self.threshold_theta:
             self.fired = LIF_SPIKE_VOLTAGE if not self.is_inhibitory else -LIF_SPIKE_VOLTAGE
             self.has_fired = True
             self.output_spike_timing = 0
@@ -121,7 +121,7 @@ class LIFSpikingNeuron(object):
             self.inputs = {key: value * NEURON_WEIGHT_BUDGET / sum_of_input_weights for key, value in
                            self.inputs.items()}
 
-    def _get_threshold(self):
+    def get_threshold(self):
         return min(sum(self.inputs.values()), LIF_MEMBRANE_POTENTIAL_THRESHOLD)
 
 
@@ -196,9 +196,8 @@ class LIFSpikingNeuralNetwork(object):
                 weights[(origin_key, destination_key)] = weight
         return weights
 
-    def get_membrane_potentials(self):
-        return {key: (neuron.membrane_potential, LIF_MEMBRANE_POTENTIAL_THRESHOLD + neuron.threshold_theta) for
-                key, neuron
+    def get_membrane_potentials_and_thresholds(self):
+        return {key: (neuron.membrane_potential, neuron.get_threshold() + neuron.threshold_theta) for key, neuron
                 in self.neurons.items()}
 
     @staticmethod

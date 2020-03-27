@@ -120,7 +120,7 @@ class TwoDimensionalEnvironment(object):
         eat_actuator = []
         avoid_actuator = []
         weights = {key: [] for key, _ in agent.spiking_neural_network.get_weights().items()}
-        membrane_potentials = {key: [] for key, _ in agent.spiking_neural_network.get_membrane_potentials().items()}
+        membrane_potentials = {key: [] for key, _ in agent.spiking_neural_network.get_membrane_potentials_and_thresholds().items()}
 
         inputs = self._get_initial_input_voltages()
         for i, sample in enumerate(self.food_loadout):
@@ -134,7 +134,7 @@ class TwoDimensionalEnvironment(object):
             for time_step in range(i * NUM_TIME_STEPS, (i + 1) * NUM_TIME_STEPS):
                 for key, weight in agent.spiking_neural_network.get_weights().items():
                     weights[key].append(weight)
-                for key, membrane_potential in agent.spiking_neural_network.get_membrane_potentials().items():
+                for key, membrane_potential in agent.spiking_neural_network.get_membrane_potentials_and_thresholds().items():
                     membrane_potentials[key].append(membrane_potential)
                 if agent.health_points <= 0:
                     return agent.key, self._fitness(time_step), weights, membrane_potentials, time_step
