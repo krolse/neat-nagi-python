@@ -1,4 +1,4 @@
-from nagi.constants import FLIP_POINT, NUM_TIME_STEPS
+from nagi.constants import FLIP_POINT_1D, NUM_TIME_STEPS
 from nagi.simulation_1d import OneDimensionalEnvironment, OneDimensionalAgent
 from nagi.visualization import visualize_genome
 import matplotlib.pyplot as plt
@@ -38,7 +38,7 @@ for i, key in enumerate(sorted(membrane_potentials.keys())):
     plt.plot(t_values, [membrane_potential[0] for membrane_potential in membrane_potentials[key]], 'g-')
     plt.plot(t_values, [membrane_potential[1] for membrane_potential in membrane_potentials[key]], 'r-')
     flip_points = [i for i in range(len(membrane_potentials[key])) if
-                   i >= FLIP_POINT * NUM_TIME_STEPS and i % (FLIP_POINT * NUM_TIME_STEPS) == 0]
+                   i >= FLIP_POINT_1D * NUM_TIME_STEPS and i % (FLIP_POINT_1D * NUM_TIME_STEPS) == 0]
     for flip_point in flip_points:
         plt.axvline(x=flip_point)
 
@@ -51,7 +51,7 @@ for i, key in enumerate(sorted(weights.keys(), key=lambda x: x[1])):
     plt.xlabel("Time (in ms)")
     plt.plot(t_values, weights[key], 'b-')
     flip_points = [i for i in range(len(weights[key])) if
-                   i >= FLIP_POINT * NUM_TIME_STEPS and i % (FLIP_POINT * NUM_TIME_STEPS) == 0]
+                   i >= FLIP_POINT_1D * NUM_TIME_STEPS and i % (FLIP_POINT_1D * NUM_TIME_STEPS) == 0]
     for flip_point in flip_points:
         plt.axvline(x=flip_point)
 

@@ -2,7 +2,7 @@ from enum import Enum
 from itertools import cycle
 from typing import List, Tuple
 
-from nagi.constants import TIME_STEP_IN_MSEC, MAX_HEALTH_POINTS, DAMAGE_FROM_AVOIDING_FOOD, FLIP_POINT, \
+from nagi.constants import TIME_STEP_IN_MSEC, MAX_HEALTH_POINTS, DAMAGE_FROM_AVOIDING_FOOD, FLIP_POINT_1D, \
     DAMAGE_FROM_EATING_WRONG_FOOD, ACTUATOR_WINDOW, LIF_SPIKE_VOLTAGE, NUM_TIME_STEPS, DAMAGE_FROM_CORRECT_ACTION, \
     DAMAGE_FROM_INCORRECT_ACTION, FOOD_SAMPLES_PER_SIMULATION
 from nagi.lifsnn import LIFSpikingNeuralNetwork
@@ -81,7 +81,7 @@ class OneDimensionalEnvironment(object):
             eat_actuator = [t for t in eat_actuator if t >= NUM_TIME_STEPS * (i - 1)]
             avoid_actuator = [t for t in avoid_actuator if t >= NUM_TIME_STEPS * (i - 1)]
             frequencies = self._get_initial_input_frequencies(sample)
-            if i >= FLIP_POINT and i % FLIP_POINT == 0:
+            if i >= FLIP_POINT_1D and i % FLIP_POINT_1D == 0:
                 print(10 * "=")
                 self.mutate()
             for time_step in range(i * NUM_TIME_STEPS, (i + 1) * NUM_TIME_STEPS):
@@ -121,7 +121,7 @@ class OneDimensionalEnvironment(object):
             avoid_actuator = [t for t in avoid_actuator if t >= NUM_TIME_STEPS * (i - 1)]
 
             frequencies = self._get_initial_input_frequencies(sample)
-            if i >= FLIP_POINT and i % FLIP_POINT == 0:
+            if i >= FLIP_POINT_1D and i % FLIP_POINT_1D == 0:
                 print(10 * "=")
                 self.mutate()
             for time_step in range(i * NUM_TIME_STEPS, (i + 1) * NUM_TIME_STEPS):
@@ -198,7 +198,7 @@ class OneDimensionalEnvironment(object):
         beneficial_food = self.beneficial_food
         mock_health = MAX_HEALTH_POINTS
         for i, food in enumerate(self.food_loadout):
-            if i >= FLIP_POINT and i % FLIP_POINT == 0:
+            if i >= FLIP_POINT_1D and i % FLIP_POINT_1D == 0:
                 beneficial_food = Food.WHITE if beneficial_food == Food.BLACK else Food.BLACK
             if food is beneficial_food:
                 mock_health -= DAMAGE_FROM_AVOIDING_FOOD
