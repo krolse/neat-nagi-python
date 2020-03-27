@@ -97,7 +97,7 @@ class TwoDimensionalEnvironment(object):
                     return agent.key, self._fitness(time_step)
                 if time_step > 0:
                     frequencies = self._get_input_frequencies(time_step, sample, zero_actuator, one_actuator,
-                                                              frequencies[2:])
+                                                              frequencies[4:])
                     inputs = self._get_input_voltages(time_step, frequencies)
 
                 agent.spiking_neural_network.set_inputs(inputs)
@@ -141,9 +141,8 @@ class TwoDimensionalEnvironment(object):
                     return agent.key, self._fitness(time_step), weights, membrane_potentials, time_step
                 if time_step > 0:
                     frequencies = self._get_input_frequencies(time_step, sample, zero_actuator, one_actuator,
-                                                              frequencies[2:])
+                                                              frequencies[4:])
                     inputs = self._get_input_voltages(time_step, frequencies)
-
                 agent.spiking_neural_network.set_inputs(inputs)
                 zero, one = agent.spiking_neural_network.advance(TIME_STEP_IN_MSEC)
                 if zero:
@@ -191,7 +190,7 @@ class TwoDimensionalEnvironment(object):
             else:
                 return self.low_frequency, self.high_frequency
         elif zero_count > one_count:
-            if sample not in self.current_logic_gate:
+            if sample not in self.current_logic_gate.value:
                 return self.high_frequency, self.low_frequency
             else:
                 return self.low_frequency, self.high_frequency
@@ -208,7 +207,7 @@ class TwoDimensionalEnvironment(object):
 
     @staticmethod
     def _get_initial_input_voltages():
-        return [LIF_SPIKE_VOLTAGE, LIF_SPIKE_VOLTAGE, 0, 0]
+        return [LIF_SPIKE_VOLTAGE, LIF_SPIKE_VOLTAGE, LIF_SPIKE_VOLTAGE, LIF_SPIKE_VOLTAGE, 0, 0]
 
     @staticmethod
     def _count_spikes_within_time_window(time_step: int, actuator: List[int]):
