@@ -11,7 +11,7 @@ with open('../data/test_genome_2d.pkl', 'rb') as file:
 agent = TwoDimensionalAgent.create_agent(test_genome)
 for neuron in agent.spiking_neural_network.neurons.values():
     neuron.bias = 0
-visualize_genome(test_genome, True)
+visualize_genome(test_genome, False)
 environment = TwoDimensionalEnvironment(50, 5)
 _, fitness, weights, membrane_potentials, time_step = environment.simulate_with_visualization(agent)
 

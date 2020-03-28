@@ -4,10 +4,6 @@ import matplotlib.pyplot as plt
 with open('../data/test_run.pkl', 'rb') as file:
     data = pickle.load(file)
 
-for item in data:
-    print(item)
-
-
 average_fitnesses, max_fitnesses = data[0], data[1]
 x = range(len(average_fitnesses))
 fig = plt.figure()

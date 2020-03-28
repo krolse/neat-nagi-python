@@ -48,14 +48,16 @@ class OneDimensionalEnvironment(object):
     def __init__(self, high_frequency: int, low_frequency: int):
         self.high_frequency = OneDimensionalEnvironment._generate_spike_frequency(high_frequency)
         self.low_frequency = OneDimensionalEnvironment._generate_spike_frequency(low_frequency)
-        self.beneficial_food_iterator = cycle(Food)
-        self.beneficial_food = next(self.beneficial_food_iterator)
+        self.beneficial_food = Food.BLACK
         self.food_loadout = OneDimensionalEnvironment._initialize_food_loadout()
         self.maximum_possible_lifetime = int((len(self.food_loadout) * NUM_TIME_STEPS) / DAMAGE_FROM_CORRECT_ACTION)
         self.minimum_lifetime = int((len(self.food_loadout) * NUM_TIME_STEPS) / DAMAGE_FROM_INCORRECT_ACTION)
 
     def mutate(self):
-        self.beneficial_food = next(self.beneficial_food_iterator)
+        self.beneficial_food = {
+            Food.BLACK: Food.WHITE,
+            Food.WHITE: Food.BLACK
+        }[self.beneficial_food]
 
     def deal_damage(self, agent: OneDimensionalAgent, sample: Food):
         action = agent.select_action()
@@ -82,7 +84,7 @@ class OneDimensionalEnvironment(object):
             avoid_actuator = [t for t in avoid_actuator if t >= NUM_TIME_STEPS * (i - 1)]
             frequencies = self._get_initial_input_frequencies(sample)
             if i >= FLIP_POINT_1D and i % FLIP_POINT_1D == 0:
-                print(10 * "=")
+                # print(10 * "=")
                 self.mutate()
             for time_step in range(i * NUM_TIME_STEPS, (i + 1) * NUM_TIME_STEPS):
                 if agent.health_points <= 0:
@@ -101,12 +103,12 @@ class OneDimensionalEnvironment(object):
                 agent.eat_actuator = OneDimensionalEnvironment._count_spikes_within_time_window(time_step, eat_actuator)
                 agent.avoid_actuator = OneDimensionalEnvironment._count_spikes_within_time_window(time_step, avoid_actuator)
                 self.deal_damage(agent, sample)
-            str_correct_wrong = "CORRECT" if (
-                                    agent.select_action() is Action.EAT and sample is self.beneficial_food) or (
-                                    agent.select_action() is Action.AVOID and sample is not self.beneficial_food) \
-                                else "WRONG"
-            print(f'Agent health: {int(agent.health_points)}, i={i}, beneficial food: {self.beneficial_food}, sample: {sample}, action: {agent.select_action()} {str_correct_wrong}')
-            print(f'Eat: {agent.eat_actuator}, Avoid: {agent.avoid_actuator}')
+            # str_correct_wrong = "CORRECT" if (
+            #                         agent.select_action() is Action.EAT and sample is self.beneficial_food) or (
+            #                         agent.select_action() is Action.AVOID and sample is not self.beneficial_food) \
+            #                     else "WRONG"
+            # print(f'Agent health: {int(agent.health_points)}, i={i}, beneficial food: {self.beneficial_food}, sample: {sample}, action: {agent.select_action()} {str_correct_wrong}')
+            # print(f'Eat: {agent.eat_actuator}, Avoid: {agent.avoid_actuator}')
         return agent.key, self._fitness(self.maximum_possible_lifetime)
 
     def simulate_with_visualization(self, agent: OneDimensionalAgent) -> Tuple[int, float, dict, dict, int]:
