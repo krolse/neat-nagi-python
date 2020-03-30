@@ -177,6 +177,7 @@ class LIFSpikingNeuralNetwork(object):
                     neuron.input_spike_timings[key].append(0)
 
                 sum_of_inputs += weight * in_value
+
             neuron.membrane_potential = max(
                 neuron.membrane_potential + (sum_of_inputs - neuron.membrane_potential * LIF_MEMBRANE_DECAY_RATE),
                 LIF_RESTING_MEMBRANE_POTENTIAL)

@@ -1,10 +1,9 @@
 from enum import Enum
-from itertools import cycle
 from typing import List, Tuple
 
 from nagi.constants import TIME_STEP_IN_MSEC, MAX_HEALTH_POINTS, FLIP_POINT_1D, \
     ACTUATOR_WINDOW, LIF_SPIKE_VOLTAGE, NUM_TIME_STEPS, DAMAGE_FROM_CORRECT_ACTION, \
-    DAMAGE_FROM_INCORRECT_ACTION, FOOD_SAMPLES_PER_SIMULATION
+    DAMAGE_FROM_INCORRECT_ACTION, FOOD_SAMPLES_PER_SIMULATION, DAMAGE_PENALTY_FOR_HIDDEN_NEURONS
 from nagi.lifsnn import LIFSpikingNeuralNetwork
 from nagi.neat import Genome
 
@@ -73,7 +72,7 @@ class OneDimensionalEnvironment(object):
                 damage = DAMAGE_FROM_CORRECT_ACTION
         else:
             damage = DAMAGE_FROM_INCORRECT_ACTION
-        agent.health_points -= damage * 1.05**agent.spiking_neural_network.number_of_hidden_neurons
+        agent.health_points -= damage * DAMAGE_PENALTY_FOR_HIDDEN_NEURONS ** agent.spiking_neural_network.number_of_hidden_neurons
 
     def simulate(self, agent: OneDimensionalAgent) -> Tuple[int, float]:
         eat_actuator = []
@@ -101,7 +100,8 @@ class OneDimensionalEnvironment(object):
                 if avoid:
                     avoid_actuator.append(time_step)
                 agent.eat_actuator = OneDimensionalEnvironment._count_spikes_within_time_window(time_step, eat_actuator)
-                agent.avoid_actuator = OneDimensionalEnvironment._count_spikes_within_time_window(time_step, avoid_actuator)
+                agent.avoid_actuator = OneDimensionalEnvironment._count_spikes_within_time_window(time_step,
+                                                                                                  avoid_actuator)
                 self.deal_damage(agent, sample)
             # str_correct_wrong = "CORRECT" if (
             #                         agent.select_action() is Action.EAT and sample is self.beneficial_food) or (
@@ -115,7 +115,8 @@ class OneDimensionalEnvironment(object):
         eat_actuator = []
         avoid_actuator = []
         weights = {key: [] for key, _ in agent.spiking_neural_network.get_weights().items()}
-        membrane_potentials = {key: [] for key, _ in agent.spiking_neural_network.get_membrane_potentials_and_thresholds().items()}
+        membrane_potentials = {key: [] for key, _ in
+                               agent.spiking_neural_network.get_membrane_potentials_and_thresholds().items()}
 
         inputs = self._get_initial_input_voltages()
         for i, sample in enumerate(self.food_loadout):
@@ -145,15 +146,17 @@ class OneDimensionalEnvironment(object):
                 if avoid:
                     avoid_actuator.append(time_step)
                 agent.eat_actuator = OneDimensionalEnvironment._count_spikes_within_time_window(time_step, eat_actuator)
-                agent.avoid_actuator = OneDimensionalEnvironment._count_spikes_within_time_window(time_step, avoid_actuator)
+                agent.avoid_actuator = OneDimensionalEnvironment._count_spikes_within_time_window(time_step,
+                                                                                                  avoid_actuator)
                 self.deal_damage(agent, sample)
             str_correct_wrong = "CORRECT" if (
-                                    agent.select_action() is Action.EAT and sample is self.beneficial_food) or (
-                                    agent.select_action() is Action.AVOID and sample is not self.beneficial_food) \
-                                else "WRONG"
-            print(f'Agent health: {int(agent.health_points)}, i={i}, beneficial food: {self.beneficial_food}, sample: {sample}, action: {agent.select_action()} {str_correct_wrong}')
+                 agent.select_action() is Action.EAT and sample is self.beneficial_food) or (
+                 agent.select_action() is Action.AVOID and sample is not self.beneficial_food) else "WRONG"
+            print(
+                f'Agent health: {int(agent.health_points)}, i={i}, beneficial food: {self.beneficial_food}, sample: {sample}, action: {agent.select_action()} {str_correct_wrong}')
             print(f'Eat: {agent.eat_actuator}, Avoid: {agent.avoid_actuator}')
-        return agent.key, self._fitness(self.maximum_possible_lifetime), weights, membrane_potentials, self.maximum_possible_lifetime
+        return agent.key, self._fitness(
+            self.maximum_possible_lifetime), weights, membrane_potentials, self.maximum_possible_lifetime
 
     @staticmethod
     def _initialize_food_loadout():
