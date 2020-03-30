@@ -21,9 +21,9 @@ if __name__ == '__main__':
     path = get_file_path()
     pool = mp.Pool(mp.cpu_count())
 
-    population = Population(2, 4, 2)
+    population = Population(200, 4, 2)
     generations = {}
-    for i in range(0, 100):
+    for i in range(0, 500):
         print(f'\nGeneration {i}...')
         env = OneDimensionalEnvironment(50, 5)
         agents = list([OneDimensionalAgent.create_agent(genome) for genome in population.genomes.values()])
