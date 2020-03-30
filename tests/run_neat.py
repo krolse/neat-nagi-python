@@ -1,4 +1,5 @@
 import multiprocessing as mp
+import os
 import pickle
 from copy import deepcopy
 
@@ -10,7 +11,7 @@ from nagi.simulation_1d import OneDimensionalEnvironment, OneDimensionalAgent
 if __name__ == '__main__':
     pool = mp.Pool(mp.cpu_count())
 
-    population = Population(50, 4, 2)
+    population = Population(100, 4, 2)
     generations = {}
 
     for i in range(0, 100):
@@ -21,7 +22,7 @@ if __name__ == '__main__':
         fitnesses = {result[0]: result[1] for result in results}
         generations[i] = {'population': deepcopy(population), 'fitnesses': fitnesses}
 
-        with open('../data/test_run_6.pkl', 'wb') as file:
+        with open(os.path.dirname(os.path.realpath(__file__)) + '../data/test_run_7.pkl') as file:
             pickle.dump(generations, file)
 
         population.next_generation(fitnesses)
