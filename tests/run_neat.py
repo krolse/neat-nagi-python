@@ -22,7 +22,7 @@ if __name__ == '__main__':
         fitnesses = {result[0]: result[1] for result in results}
         generations[i] = {'population': deepcopy(population), 'fitnesses': fitnesses}
 
-        with open(os.path.dirname(os.path.realpath(__file__)) + '/../data/test_run_7.pkl') as file:
+        with open(os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/data/test_run_7.pkl') as file:
             pickle.dump(generations, file)
 
         population.next_generation(fitnesses)
