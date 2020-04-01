@@ -1,24 +1,37 @@
+import multiprocessing as mp
+import os
 import pickle
+from copy import deepcopy
+
+import tqdm
 
 from nagi.neat import Population
-from nagi.simulation import Environment, Agent
-import multiprocessing as mp
+from nagi.simulation_1d import OneDimensionalEnvironment, OneDimensionalAgent
+
+
+def get_file_path():
+    root_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    run_number = 1
+    while os.path.exists(root_path + f'/data/test_run_{run_number}.pkl'):
+        run_number += 1
+    return root_path + f'/data/test_run_{run_number}.pkl'
+
 
 if __name__ == '__main__':
-    pop = Population(100, 4, 2)
-    max_fitnesses = []
-    average_fitnesses = []
+    path = get_file_path()
     pool = mp.Pool(mp.cpu_count())
 
-    for i in range(10):
-        print(f'Generation {i}...')
-        env = Environment(300, 5)
-        results = pool.map(env.simulate, [Agent.create_agent(genome) for genome in pop.genomes.values()])
+    population = Population(200, 4, 2)
+    generations = {}
+    for i in range(0, 500):
+        print(f'\nGeneration {i}...')
+        env = OneDimensionalEnvironment(50, 5)
+        agents = list([OneDimensionalAgent.create_agent(genome) for genome in population.genomes.values()])
+        results = tqdm.tqdm(pool.imap_unordered(env.simulate, agents), total=(len(agents)))
         fitnesses = {result[0]: result[1] for result in results}
+        generations[i] = {'population': deepcopy(population), 'fitnesses': fitnesses}
 
-        max_fitnesses.append(max(fitnesses.values()))
-        average_fitnesses.append(sum(fitnesses.values()) / len(fitnesses))
+        with open(path, 'wb') as file:
+            pickle.dump(generations, file)
 
-        pop.next_generation(fitnesses)
-        with open('../data/test_run.pkl', 'wb') as file:
-            pickle.dump((average_fitnesses, max_fitnesses), file)
+        population.next_generation(fitnesses)
