@@ -16,10 +16,12 @@ def get_most_fit_genome(results: Dict[int, Dict]):
 
 
 if __name__ == '__main__':
-    with open('../data/test_run_7.pkl', 'rb') as file:
+    with open('../data/test_run_1.pkl', 'rb') as file:
         data = pickle.load(file)
 
     genome = get_most_fit_genome(data)
+    with open('../data/most_fit_genome_test_run_1.pkl', 'wb') as file:
+        pickle.dump(genome, file)
     visualize_genome(genome)
     # max_fitnesses.append(max(fitnesses.values()))
     # average_fitnesses.append(sum(fitnesses.values()) / len(fitnesses))
