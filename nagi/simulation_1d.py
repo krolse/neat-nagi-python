@@ -47,26 +47,27 @@ class OneDimensionalEnvironment(object):
     def __init__(self, high_frequency: int, low_frequency: int):
         self.high_frequency = OneDimensionalEnvironment._generate_spike_frequency(high_frequency)
         self.low_frequency = OneDimensionalEnvironment._generate_spike_frequency(low_frequency)
-        self.beneficial_food = Food.BLACK
         self.food_loadout = OneDimensionalEnvironment._initialize_food_loadout()
         self.maximum_possible_lifetime = int((len(self.food_loadout) * NUM_TIME_STEPS) / DAMAGE_FROM_CORRECT_ACTION)
         self.minimum_lifetime = int((len(self.food_loadout) * NUM_TIME_STEPS) / DAMAGE_FROM_INCORRECT_ACTION)
 
-    def mutate(self):
-        self.beneficial_food = {
+    @staticmethod
+    def mutate(food: Food):
+        return {
             Food.BLACK: Food.WHITE,
             Food.WHITE: Food.BLACK
-        }[self.beneficial_food]
+        }[food]
 
-    def deal_damage(self, agent: OneDimensionalAgent, sample: Food):
+    @staticmethod
+    def deal_damage(agent: OneDimensionalAgent, sample: Food, beneficial_food: Food):
         action = agent.select_action()
         if action is Action.EAT:
-            if sample is self.beneficial_food:
+            if sample is beneficial_food:
                 damage = DAMAGE_FROM_CORRECT_ACTION
             else:
                 damage = DAMAGE_FROM_INCORRECT_ACTION
         elif action is Action.AVOID:
-            if sample is self.beneficial_food:
+            if sample is beneficial_food:
                 damage = DAMAGE_FROM_INCORRECT_ACTION
             else:
                 damage = DAMAGE_FROM_CORRECT_ACTION
@@ -78,19 +79,20 @@ class OneDimensionalEnvironment(object):
         eat_actuator = []
         avoid_actuator = []
         inputs = self._get_initial_input_voltages()
+        beneficial_food = Food.BLACK
         for i, sample in enumerate(self.food_loadout):
             eat_actuator = [t for t in eat_actuator if t >= NUM_TIME_STEPS * (i - 1)]
             avoid_actuator = [t for t in avoid_actuator if t >= NUM_TIME_STEPS * (i - 1)]
             frequencies = self._get_initial_input_frequencies(sample)
             if i >= FLIP_POINT_1D and i % FLIP_POINT_1D == 0:
                 # print(10 * "=")
-                self.mutate()
+                beneficial_food = self.mutate(sample)
             for time_step in range(i * NUM_TIME_STEPS, (i + 1) * NUM_TIME_STEPS):
                 if agent.health_points <= 0:
                     return agent.key, self._fitness(time_step)
                 if time_step > 0:
-                    frequencies = self._get_input_frequencies(time_step, sample, eat_actuator, avoid_actuator,
-                                                              frequencies[2:])
+                    frequencies = self._get_input_frequencies(time_step, sample, beneficial_food,
+                                                              eat_actuator, avoid_actuator, frequencies[2:])
                     inputs = self._get_input_voltages(time_step, frequencies)
 
                 agent.spiking_neural_network.set_inputs(inputs)
@@ -102,7 +104,7 @@ class OneDimensionalEnvironment(object):
                 agent.eat_actuator = OneDimensionalEnvironment._count_spikes_within_time_window(time_step, eat_actuator)
                 agent.avoid_actuator = OneDimensionalEnvironment._count_spikes_within_time_window(time_step,
                                                                                                   avoid_actuator)
-                self.deal_damage(agent, sample)
+                self.deal_damage(agent, sample, beneficial_food)
             # str_correct_wrong = "CORRECT" if (
             #                         agent.select_action() is Action.EAT and sample is self.beneficial_food) or (
             #                         agent.select_action() is Action.AVOID and sample is not self.beneficial_food) \
@@ -114,6 +116,7 @@ class OneDimensionalEnvironment(object):
     def simulate_with_visualization(self, agent: OneDimensionalAgent) -> Tuple[int, float, dict, dict, int]:
         eat_actuator = []
         avoid_actuator = []
+        beneficial_food = Food.BLACK
         weights = {key: [] for key, _ in agent.spiking_neural_network.get_weights().items()}
         membrane_potentials = {key: [] for key, _ in
                                agent.spiking_neural_network.get_membrane_potentials_and_thresholds().items()}
@@ -126,7 +129,7 @@ class OneDimensionalEnvironment(object):
             frequencies = self._get_initial_input_frequencies(sample)
             if i >= FLIP_POINT_1D and i % FLIP_POINT_1D == 0:
                 print(10 * "=")
-                self.mutate()
+                beneficial_food = self.mutate(sample)
             for time_step in range(i * NUM_TIME_STEPS, (i + 1) * NUM_TIME_STEPS):
                 for key, weight in agent.spiking_neural_network.get_weights().items():
                     weights[key].append(weight)
@@ -135,8 +138,8 @@ class OneDimensionalEnvironment(object):
                 if agent.health_points <= 0:
                     return agent.key, self._fitness(time_step), weights, membrane_potentials, time_step
                 if time_step > 0:
-                    frequencies = self._get_input_frequencies(time_step, sample, eat_actuator, avoid_actuator,
-                                                              frequencies[2:])
+                    frequencies = self._get_input_frequencies(time_step, sample, beneficial_food,
+                                                              eat_actuator, avoid_actuator, frequencies[2:])
                     inputs = self._get_input_voltages(time_step, frequencies)
 
                 agent.spiking_neural_network.set_inputs(inputs)
@@ -148,12 +151,12 @@ class OneDimensionalEnvironment(object):
                 agent.eat_actuator = OneDimensionalEnvironment._count_spikes_within_time_window(time_step, eat_actuator)
                 agent.avoid_actuator = OneDimensionalEnvironment._count_spikes_within_time_window(time_step,
                                                                                                   avoid_actuator)
-                self.deal_damage(agent, sample)
+                self.deal_damage(agent, sample, beneficial_food)
             str_correct_wrong = "CORRECT" if (
-                 agent.select_action() is Action.EAT and sample is self.beneficial_food) or (
-                 agent.select_action() is Action.AVOID and sample is not self.beneficial_food) else "WRONG"
+                 agent.select_action() is Action.EAT and sample is beneficial_food) or (
+                 agent.select_action() is Action.AVOID and sample is not beneficial_food) else "WRONG"
             print(
-                f'Agent health: {int(agent.health_points)}, i={i}, beneficial food: {self.beneficial_food}, sample: {sample}, action: {agent.select_action()} {str_correct_wrong}')
+                f'Agent health: {int(agent.health_points)}, i={i}, beneficial food: {beneficial_food}, sample: {sample}, action: {agent.select_action()} {str_correct_wrong}')
             print(f'Eat: {agent.eat_actuator}, Avoid: {agent.avoid_actuator}')
         return agent.key, self._fitness(
             self.maximum_possible_lifetime), weights, membrane_potentials, self.maximum_possible_lifetime
@@ -162,13 +165,13 @@ class OneDimensionalEnvironment(object):
     def _initialize_food_loadout():
         return [*[color for color in Food] * int(FOOD_SAMPLES_PER_SIMULATION / Food.__len__())]
 
-    def _get_input_frequencies(self, time_step: int, sample: Food, eat_actuator: List[int], avoid_actuator: List[int],
-                               previous_reward_frequencies: List[int]) -> List[int]:
+    def _get_input_frequencies(self, time_step: int, sample: Food, beneficial_food: Food, eat_actuator: List[int],
+                               avoid_actuator: List[int], previous_reward_frequencies: List[int]) -> List[int]:
         eat_count = OneDimensionalEnvironment._count_spikes_within_time_window(time_step, eat_actuator)
         avoid_count = OneDimensionalEnvironment._count_spikes_within_time_window(time_step, avoid_actuator)
 
         return [*self._encode_sample(sample),
-                *self._encode_reward(sample, eat_count, avoid_count, previous_reward_frequencies)]
+                *self._encode_reward(sample, eat_count, avoid_count, previous_reward_frequencies, beneficial_food)]
 
     def _get_initial_input_frequencies(self, sample: Food):
         return [*self._encode_sample(sample), self.low_frequency, self.low_frequency]
@@ -182,14 +185,15 @@ class OneDimensionalEnvironment(object):
             Food.WHITE: (self.low_frequency, self.high_frequency)
         }[sample]
 
-    def _encode_reward(self, sample: Food, eat_count: int, avoid_count: int, previous_reward_frequencies):
+    def _encode_reward(self, sample: Food, eat_count: int, avoid_count: int, previous_reward_frequencies,
+                       beneficial_food: Food):
         if eat_count > avoid_count:
-            if sample is self.beneficial_food:
+            if sample is beneficial_food:
                 return self.high_frequency, self.low_frequency
             else:
                 return self.low_frequency, self.high_frequency
         elif avoid_count > eat_count:
-            if sample is not self.beneficial_food:
+            if sample is not beneficial_food:
                 return self.high_frequency, self.low_frequency
             else:
                 return self.low_frequency, self.high_frequency
