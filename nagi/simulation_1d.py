@@ -86,7 +86,7 @@ class OneDimensionalEnvironment(object):
             frequencies = self._get_initial_input_frequencies(sample)
             if i >= FLIP_POINT_1D and i % FLIP_POINT_1D == 0:
                 # print(10 * "=")
-                beneficial_food = self.mutate(sample)
+                beneficial_food = self.mutate(beneficial_food)
             for time_step in range(i * NUM_TIME_STEPS, (i + 1) * NUM_TIME_STEPS):
                 if agent.health_points <= 0:
                     return agent.key, self._fitness(time_step)

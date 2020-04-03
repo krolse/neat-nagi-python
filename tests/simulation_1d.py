@@ -10,7 +10,7 @@ with open('../data/top_genome_test_run_3.pkl', 'rb') as file:
 
 agent = OneDimensionalAgent.create_agent(test_genome)
 visualize_genome(test_genome, True)
-environment = OneDimensionalEnvironment(100, 5)
+environment = OneDimensionalEnvironment(50, 5)
 _, fitness, weights, membrane_potentials, time_step = environment.simulate_with_visualization(agent)
 
 t_values = range(time_step + 1)

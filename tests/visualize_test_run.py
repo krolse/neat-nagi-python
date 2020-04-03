@@ -8,7 +8,7 @@ from nagi.visualization import visualize_genome
 
 def get_most_fit_genome(results: Dict[int, Dict]):
     most_fit_individuals = {key: max(value['fitnesses'].items(), key=lambda i: i[1]) for key, value in results.items()}
-    most_fit_individual = max([(key, value) for key, value in most_fit_individuals.items()], key=lambda i: i[1])
+    most_fit_individual = max([(key, value) for key, value in most_fit_individuals.items()], key=lambda i: i[1][1])
     generation = most_fit_individual[0]
     genome_id = most_fit_individual[1][0]
 
