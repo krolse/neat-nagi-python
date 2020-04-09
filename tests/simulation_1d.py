@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 import pickle
 
-with open('../data/top_genome_test_run_1.pkl', 'rb') as file:
+with open('../data/most_fit_genome_test_run_5.pkl', 'rb') as file:
     test_genome = pickle.load(file)
 
 agent = OneDimensionalAgent.create_agent(test_genome)
