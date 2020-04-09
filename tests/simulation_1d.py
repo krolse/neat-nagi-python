@@ -1,4 +1,4 @@
-from nagi.constants import FLIP_POINT_1D, NUM_TIME_STEPS
+from nagi.constants import FLIP_POINT_1D, NUM_TIME_STEPS, RED, BLUE, GREEN
 from nagi.simulation_1d import OneDimensionalEnvironment, OneDimensionalAgent
 from nagi.visualization import visualize_genome
 import matplotlib.pyplot as plt
@@ -24,15 +24,24 @@ for i, key in enumerate(sorted(membrane_potentials.keys())):
     plt.subplot(number_of_neurons, 1, i + 1)
     plt.ylabel(f"{key}")
     plt.xlabel("Time (in ms)")
-    plt.plot(t_values, [membrane_potential[0] for membrane_potential in membrane_potentials[key]], 'g-')
-    plt.plot(t_values, [membrane_potential[1] for membrane_potential in membrane_potentials[key]], 'b-')
+    plt.plot(t_values, [membrane_potential[0] for membrane_potential in membrane_potentials[key]],
+             color=GREEN, linestyle='-')
+    plt.plot(t_values, [membrane_potential[1] for membrane_potential in membrane_potentials[key]],
+             color=BLUE, linestyle='-')
     flip_points = [i for i in range(len(membrane_potentials[key])) if
                    i >= FLIP_POINT_1D * NUM_TIME_STEPS and i % (FLIP_POINT_1D * NUM_TIME_STEPS) == 0]
+    sample_points = [i for i in range(len(membrane_potentials[key])) if
+                     i >= NUM_TIME_STEPS and
+                     i % NUM_TIME_STEPS == 0 and
+                     i not in flip_points]
+
     for flip_point in flip_points:
-        plt.axvline(x=flip_point)
+        plt.axvline(x=flip_point, color='k')
+    for sample_point in sample_points:
+        plt.axvline(x=sample_point, color='gray', linestyle='--')
     for start, end in intervals:
         height = 4
-        rect = plt.Rectangle((start, 0), end - start, height=height, facecolor="red", alpha=0.5)
+        rect = plt.Rectangle((start, 0), end - start, height=height, facecolor=RED)
         plt.gca().add_patch(rect)
 
 
@@ -43,11 +52,18 @@ for i, key in enumerate(sorted(weights.keys(), key=lambda x: x[1])):
     plt.subplot(number_of_weights, 1, i + 1)
     plt.ylabel(f"{key}")
     plt.xlabel("Time (in ms)")
-    plt.plot(t_values, weights[key], 'b-')
+    plt.plot(t_values, weights[key], color=BLUE, linestyle='-')
     flip_points = [i for i in range(len(weights[key])) if
                    i >= FLIP_POINT_1D * NUM_TIME_STEPS and i % (FLIP_POINT_1D * NUM_TIME_STEPS) == 0]
+    sample_points = [i for i in range(len(weights[key])) if
+                     i >= NUM_TIME_STEPS and
+                     i % NUM_TIME_STEPS == 0 and
+                     i not in flip_points]
+
     for flip_point in flip_points:
-        plt.axvline(x=flip_point)
+        plt.axvline(x=flip_point, color='k')
+    for sample_point in sample_points:
+        plt.axvline(x=sample_point, color='gray', linestyle='--')
     for start, end in intervals:
         height = 2
         rect = plt.Rectangle((start, 0), end - start, height=height, facecolor="red", alpha=0.5)
