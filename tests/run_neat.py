@@ -57,4 +57,5 @@ if __name__ == '__main__':
 
         with open(pickle_path, 'wb') as file:
             pickle.dump(generations, file)
+
         population.next_generation(fitnesses)
