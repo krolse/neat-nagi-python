@@ -1,3 +1,4 @@
+import re
 from enum import Enum
 from typing import List, Tuple
 
@@ -111,12 +112,14 @@ class OneDimensionalEnvironment(object):
             # print(f'Eat: {agent.eat_actuator}, Avoid: {agent.avoid_actuator}')
         return agent.key, self._fitness(self.maximum_possible_lifetime)
 
-    def simulate_with_visualization(self, agent: OneDimensionalAgent) -> Tuple[int, float, dict, dict, int]:
+    def simulate_with_visualization(self, agent: OneDimensionalAgent) \
+            -> Tuple[int, float, dict, dict, int, List[Tuple[int, int]]]:
         eat_actuator = []
         avoid_actuator = []
         weights = {key: [] for key, _ in agent.spiking_neural_network.get_weights().items()}
         membrane_potentials = {key: [] for key, _ in
                                agent.spiking_neural_network.get_membrane_potentials_and_thresholds().items()}
+        action_logger = []
 
         inputs = self._get_initial_input_voltages()
         for i, sample in enumerate(self.food_loadout):
@@ -133,7 +136,7 @@ class OneDimensionalEnvironment(object):
                 for key, membrane_potential in agent.spiking_neural_network.get_membrane_potentials_and_thresholds().items():
                     membrane_potentials[key].append(membrane_potential)
                 if agent.health_points <= 0:
-                    return agent.key, self._fitness(time_step), weights, membrane_potentials, time_step
+                    return agent.key, self._fitness(time_step), weights, membrane_potentials, time_step, self._get_wrong_action_intervals(action_logger)
                 if time_step > 0:
                     frequencies = self._get_input_frequencies(time_step, sample, eat_actuator, avoid_actuator,
                                                               frequencies[2:])
@@ -149,14 +152,13 @@ class OneDimensionalEnvironment(object):
                 agent.avoid_actuator = OneDimensionalEnvironment._count_spikes_within_time_window(time_step,
                                                                                                   avoid_actuator)
                 self.deal_damage(agent, sample)
-            str_correct_wrong = "CORRECT" if (
-                 agent.select_action() is Action.EAT and sample is self.beneficial_food) or (
-                 agent.select_action() is Action.AVOID and sample is not self.beneficial_food) else "WRONG"
+                action_logger.append(self._get_correct_wrong_int(agent, sample))
+            str_correct_wrong = self._get_correct_wrong_string(agent, sample)
             print(
                 f'Agent health: {int(agent.health_points)}, i={i}, beneficial food: {self.beneficial_food}, sample: {sample}, action: {agent.select_action()} {str_correct_wrong}')
             print(f'Eat: {agent.eat_actuator}, Avoid: {agent.avoid_actuator}')
         return agent.key, self._fitness(
-            self.maximum_possible_lifetime), weights, membrane_potentials, self.maximum_possible_lifetime
+            self.maximum_possible_lifetime), weights, membrane_potentials, self.maximum_possible_lifetime, self._get_wrong_action_intervals(action_logger)
 
     @staticmethod
     def _initialize_food_loadout():
@@ -215,3 +217,17 @@ class OneDimensionalEnvironment(object):
     @staticmethod
     def _generate_spike_frequency(frequency: int) -> int:
         return int(1 / (TIME_STEP_IN_MSEC / 1000) / frequency)
+
+    @staticmethod
+    def _get_wrong_action_intervals(values: List[int]):
+        return [(m.start(), m.end()) for m in re.finditer(r'0+', ''.join([str(x) for x in values]))]
+
+    def _get_correct_wrong_string(self, agent: OneDimensionalAgent, sample: Food) -> str:
+        return "CORRECT" if (
+            agent.select_action() is Action.EAT and sample is self.beneficial_food) or (
+            agent.select_action() is Action.AVOID and sample is not self.beneficial_food) else "WRONG"
+
+    def _get_correct_wrong_int(self, agent: OneDimensionalAgent, sample: Food) -> int:
+        return 1 if (
+            agent.select_action() is Action.EAT and sample is self.beneficial_food) or (
+            agent.select_action() is Action.AVOID and sample is not self.beneficial_food) else 0
