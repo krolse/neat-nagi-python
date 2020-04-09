@@ -11,7 +11,7 @@ with open('../data/most_fit_genome_test_run_5.pkl', 'rb') as file:
 agent = OneDimensionalAgent.create_agent(test_genome)
 visualize_genome(test_genome, True)
 environment = OneDimensionalEnvironment(50, 5)
-_, fitness, weights, membrane_potentials, time_step = environment.simulate_with_visualization(agent)
+_, fitness, weights, membrane_potentials, time_step, intervals = environment.simulate_with_visualization(agent)
 
 t_values = range(time_step + 1)
 number_of_neurons = len(membrane_potentials.keys())
