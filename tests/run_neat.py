@@ -9,13 +9,6 @@ from nagi.constants import FOOD_SAMPLES_PER_SIMULATION, DAMAGE_PENALTY_FOR_HIDDE
 from nagi.neat import Population
 from nagi.simulation_1d import OneDimensionalEnvironment, OneDimensionalAgent
 
-environment_type = "1D"
-input_size, output_size = 4, 2
-population_size = 10
-number_of_generations = 1
-high_frequency = 50
-low_frequency = 5
-
 
 def get_file_paths():
     root_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -35,6 +28,15 @@ High frequency: {high_frequency}
 Low frequency: {low_frequency}
 Samples per simulation: {FOOD_SAMPLES_PER_SIMULATION}
 Damage penalty per hidden neuron: {DAMAGE_PENALTY_FOR_HIDDEN_NEURONS}"""
+
+
+environment_type = "1D"
+input_size, output_size = 4, 2
+high_frequency = 50
+low_frequency = 5
+
+population_size = 200
+number_of_generations = 100
 
 
 if __name__ == '__main__':
