@@ -1,6 +1,7 @@
 import pickle
 from itertools import count
 
+from definitions import ROOT_PATH
 from nagi.neat import Genome
 from nagi.visualization import visualize_genome
 
@@ -10,5 +11,5 @@ for _ in range(10):
     test_genome.mutate()
 visualize_genome(test_genome)
 
-with open('../data/test_genome.pkl', 'wb') as file:
+with open(f'{ROOT_PATH}/data/test_genome.pkl', 'wb') as file:
     pickle.dump(test_genome, file)

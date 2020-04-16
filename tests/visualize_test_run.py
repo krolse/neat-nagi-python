@@ -1,9 +1,9 @@
 import pickle
-from typing import Dict, List
+from typing import Dict
 
 import matplotlib.pyplot as plt
 
-from nagi.visualization import visualize_genome
+from definitions import ROOT_PATH
 
 
 def get_most_fit_genome(results: Dict[int, Dict]):
@@ -16,25 +16,24 @@ def get_most_fit_genome(results: Dict[int, Dict]):
 
 
 if __name__ == '__main__':
-    with open('../../test_run_1.pkl', 'rb') as file:
+    with open(f'{ROOT_PATH}/data/test_run_5.pkl', 'rb') as file:
         data = pickle.load(file)
 
-    genome = get_most_fit_genome(data)
+    # genome = get_most_fit_genome(data)
     # with open('../data/most_fit_genome_big.pkl.pkl', 'wb') as file:
     #     pickle.dump(genome, file)
-    visualize_genome(genome)
-    # max_fitnesses.append(max(fitnesses.values()))
-    # average_fitnesses.append(sum(fitnesses.values()) / len(fitnesses))
+    # visualize_genome(genome)
 
     fitnesses = [generation['fitnesses'] for generation in data.values()]
-    max_fitnesses = [max(generation.values()) for generation in fitnesses]
     average_fitnesses = [sum(generation.values()) / len(generation) for generation in fitnesses]
+    # max_fitnesses = [max(generation.values()) for generation in fitnesses]
 
     x = range(len(average_fitnesses))
     fig = plt.figure()
     plt.ylim(0, 1)
     plt.ylabel('fitness')
     plt.xlabel('generation')
-    plt.plot(x, average_fitnesses, 'b')
-    plt.plot(x, max_fitnesses, 'r')
+    for generation, fitness in enumerate([fitness.values() for fitness in fitnesses]):
+        plt.scatter([generation for _ in range(len(fitness))], fitness, color='b', s=0.1)
+    plt.plot(x, average_fitnesses, 'r')
     plt.show()

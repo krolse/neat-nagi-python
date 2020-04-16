@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
 from nagi import izsnn, constants
-from nagi.constants import TIME_STEP_IN_MSEC, SYMMETRIC_HEBBIAN_PARAMS, ASYMMETRIC_HEBBIAN_PARAMS, IZ_SPIKE_VOLTAGE
+from nagi.constants import SYMMETRIC_HEBBIAN_PARAMS, ASYMMETRIC_HEBBIAN_PARAMS, IZ_SPIKE_VOLTAGE
 from nagi.neat import LearningRule
 
 

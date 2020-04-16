@@ -5,20 +5,22 @@ from copy import deepcopy
 
 import tqdm
 
-from nagi.constants import FOOD_SAMPLES_PER_SIMULATION, DAMAGE_PENALTY_FOR_HIDDEN_NEURONS
+from definitions import ROOT_PATH
 from nagi.neat import Population
 from nagi.simulation_1d import OneDimensionalEnvironment, OneDimensionalAgent
 
 
 def get_file_paths():
-    root_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     run_number = 1
-    while os.path.exists(root_path + f'/data/test_run_{run_number}.pkl'):
+    while os.path.exists(f'{ROOT_PATH}/data/test_run_{run_number}.pkl'):
         run_number += 1
-    return f'{root_path}/data/test_run_{run_number}.pkl', f'{root_path}/data/test_run_{run_number}_config.txt'
+    return f'{ROOT_PATH}/data/test_run_{run_number}.pkl', f'{ROOT_PATH}/data/test_run_{run_number}_config.txt'
 
 
 def generate_config_string():
+    with open(f'{ROOT_PATH}/nagi/constants.py', 'r') as f:
+        constants = f.read()
+
     return f"""Environment type: {environment_type}
 Input size: {input_size}
 Output size: {output_size}
@@ -26,8 +28,8 @@ Population size: {population_size}
 Number of generations: {number_of_generations}
 High frequency: {high_frequency}
 Low frequency: {low_frequency}
-Samples per simulation: {FOOD_SAMPLES_PER_SIMULATION}
-Damage penalty per hidden neuron: {DAMAGE_PENALTY_FOR_HIDDEN_NEURONS}"""
+
+{constants}"""
 
 
 environment_type = "1D"
@@ -35,8 +37,8 @@ input_size, output_size = 4, 2
 high_frequency = 50
 low_frequency = 5
 
-population_size = 200
-number_of_generations = 100
+population_size = 1
+number_of_generations = 1
 
 
 if __name__ == '__main__':
