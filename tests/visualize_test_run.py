@@ -1,9 +1,9 @@
 import pickle
-from typing import Dict, List
+from typing import Dict
 
 import matplotlib.pyplot as plt
 
-from nagi.visualization import visualize_genome
+from definitions import ROOT_PATH
 
 
 def get_most_fit_genome(results: Dict[int, Dict]):
@@ -16,7 +16,7 @@ def get_most_fit_genome(results: Dict[int, Dict]):
 
 
 if __name__ == '__main__':
-    with open('../../test_run_1.pkl', 'rb') as file:
+    with open(f'{ROOT_PATH}/data/test_run_5.pkl', 'rb') as file:
         data = pickle.load(file)
 
     # genome = get_most_fit_genome(data)

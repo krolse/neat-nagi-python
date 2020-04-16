@@ -1,3 +1,11 @@
+Environment type: 1D
+Input size: 4
+Output size: 2
+Population size: 1
+Number of generations: 1
+High frequency: 50
+Low frequency: 5
+
 # SNN
 TIME_STEP_IN_MSEC = 0.1
 THRESHOLD_THETA_INCREMENT_RATE = 0.2

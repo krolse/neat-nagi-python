@@ -1,11 +1,13 @@
+import pickle
+
+import matplotlib.pyplot as plt
+
+from definitions import ROOT_PATH
 from nagi.constants import FLIP_POINT_1D, NUM_TIME_STEPS, RED, BLUE, GREEN
 from nagi.simulation_1d import OneDimensionalEnvironment, OneDimensionalAgent
 from nagi.visualization import visualize_genome
-import matplotlib.pyplot as plt
 
-import pickle
-
-with open('../data/most_fit_genome_test_run_5.pkl', 'rb') as file:
+with open(f'{ROOT_PATH}/data/most_fit_genome_test_run_5.pkl', 'rb') as file:
     test_genome = pickle.load(file)
 
 agent = OneDimensionalAgent.create_agent(test_genome)
