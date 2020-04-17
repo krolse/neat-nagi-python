@@ -17,17 +17,17 @@ def get_most_fit_genome(results: Dict[int, Dict]):
 
 
 if __name__ == '__main__':
-    with open(f'{fileopenbox(default=f"{ROOT_PATH}/data/test_run*.pkl")}', 'rb') as file:
+    path = fileopenbox(default=f"{ROOT_PATH}/data/test_run*.pkl")
+    with open(path, 'rb') as file:
         data = pickle.load(file)
 
-    # genome = get_most_fit_genome(data)
-    # with open('../data/most_fit_genome_big.pkl.pkl', 'wb') as file:
-    #     pickle.dump(genome, file)
-    # visualize_genome(genome)
+    genome = get_most_fit_genome(data)
+    run_number = path[path.find('.') - 1]
+    with open(f'{ROOT_PATH}/data/most_fit_genome_test_run_{run_number}.pkl', 'wb') as file:
+        pickle.dump(genome, file)
 
     fitnesses = [generation['fitnesses'] for generation in data.values()]
     average_fitnesses = [sum(generation.values()) / len(generation) for generation in fitnesses]
-    # max_fitnesses = [max(generation.values()) for generation in fitnesses]
 
     x = range(len(average_fitnesses))
     fig = plt.figure()
