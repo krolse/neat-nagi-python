@@ -1,13 +1,14 @@
 import pickle
 
 import matplotlib.pyplot as plt
+from easygui import fileopenbox
 
 from definitions import ROOT_PATH
 from nagi.constants import FLIP_POINT_1D, NUM_TIME_STEPS
 from nagi.simulation_2d import TwoDimensionalEnvironment, TwoDimensionalAgent
 from nagi.visualization import visualize_genome
 
-with open(f'{ROOT_PATH}/data/test_genome_2d.pkl', 'rb') as file:
+with open(f'{fileopenbox(default=f"{ROOT_PATH}/data/most_fit_genome*.pkl" )}', 'rb') as file:
     test_genome = pickle.load(file)
 
 agent = TwoDimensionalAgent.create_agent(test_genome)

@@ -2,6 +2,7 @@ import pickle
 from typing import Dict
 
 import matplotlib.pyplot as plt
+from easygui import fileopenbox
 
 from definitions import ROOT_PATH
 
@@ -16,7 +17,7 @@ def get_most_fit_genome(results: Dict[int, Dict]):
 
 
 if __name__ == '__main__':
-    with open(f'{ROOT_PATH}/data/test_run_5.pkl', 'rb') as file:
+    with open(f'{fileopenbox(default=f"{ROOT_PATH}/data/test_run*.pkl")}', 'rb') as file:
         data = pickle.load(file)
 
     # genome = get_most_fit_genome(data)
