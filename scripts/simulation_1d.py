@@ -8,7 +8,7 @@ from nagi.constants import FLIP_POINT_1D, NUM_TIME_STEPS, RED, BLUE, GREEN
 from nagi.simulation_1d import OneDimensionalEnvironment, OneDimensionalAgent
 from nagi.visualization import visualize_genome
 
-with open(f'{fileopenbox(default=f"{ROOT_PATH}/data/most_fit_genome*.pkl" )}', 'rb') as file:
+with open(f'{fileopenbox(default=f"{ROOT_PATH}/data/*genome*.pkl" )}', 'rb') as file:
     test_genome = pickle.load(file)
 
 agent = OneDimensionalAgent.create_agent(test_genome)

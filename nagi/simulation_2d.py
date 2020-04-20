@@ -81,7 +81,7 @@ class TwoDimensionalEnvironment(object):
                 LogicGate.AND: LogicGate.NAND,
                 LogicGate.NAND: LogicGate.OR,
                 LogicGate.OR: LogicGate.NOR,
-                LogicGate.NOR: LogicGate
+                LogicGate.NOR: LogicGate.AND
             }[self.current_logic_gate]
         else:
             self.current_logic_gate = {
@@ -247,10 +247,10 @@ class TwoDimensionalEnvironment(object):
 
     def _get_correct_wrong_string(self, agent: TwoDimensionalAgent, sample: Tuple[int, int]) -> str:
         return "CORRECT" if (
-            agent.select_prediction() is 1 and sample in self.current_logic_gate.value) or (
-            agent.select_prediction() is 0 and sample not in self.current_logic_gate.value) else "WRONG"
+            agent.select_prediction() == 1 and sample in self.current_logic_gate.value) or (
+            agent.select_prediction() == 0 and sample not in self.current_logic_gate.value) else "WRONG"
 
     def _get_correct_wrong_int(self, agent: TwoDimensionalAgent, sample: Tuple[int, int]) -> int:
         return 1 if (
-            agent.select_prediction() is 1 and sample in self.current_logic_gate.value) or (
-            agent.select_prediction() is 0 and sample not in self.current_logic_gate.value) else 0
+            agent.select_prediction() == 1 and sample in self.current_logic_gate.value) or (
+            agent.select_prediction() == 0 and sample not in self.current_logic_gate.value) else 0
