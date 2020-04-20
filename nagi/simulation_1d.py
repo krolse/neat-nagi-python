@@ -2,7 +2,7 @@ import re
 from enum import Enum
 from typing import List, Tuple
 
-from nagi.constants import TIME_STEP_IN_MSEC, MAX_HEALTH_POINTS, FLIP_POINT_1D, \
+from nagi.constants import TIME_STEP_IN_MSEC, MAX_HEALTH_POINTS_1D, FLIP_POINT_1D, \
     ACTUATOR_WINDOW, LIF_SPIKE_VOLTAGE, NUM_TIME_STEPS, DAMAGE_FROM_CORRECT_ACTION, \
     DAMAGE_FROM_INCORRECT_ACTION, FOOD_SAMPLES_PER_SIMULATION, DAMAGE_PENALTY_FOR_HIDDEN_NEURONS
 from nagi.lifsnn import LIFSpikingNeuralNetwork
@@ -25,7 +25,7 @@ class OneDimensionalAgent(object):
         self.key = key
         self.eat_actuator = 0
         self.avoid_actuator = 0
-        self.health_points = MAX_HEALTH_POINTS
+        self.health_points = MAX_HEALTH_POINTS_1D
         self.current_action = None
 
     def select_action(self):

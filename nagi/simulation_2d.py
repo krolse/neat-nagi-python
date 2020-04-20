@@ -1,10 +1,11 @@
+import re
 from enum import Enum
 from itertools import cycle
 from typing import List, Tuple
 
-from nagi.constants import TIME_STEP_IN_MSEC, MAX_HEALTH_POINTS, FLIP_POINT_2D, \
+from nagi.constants import TIME_STEP_IN_MSEC, MAX_HEALTH_POINTS_2D, FLIP_POINT_2D, \
     ACTUATOR_WINDOW, LIF_SPIKE_VOLTAGE, NUM_TIME_STEPS, DAMAGE_FROM_CORRECT_ACTION, \
-    DAMAGE_FROM_INCORRECT_ACTION, FOOD_SAMPLES_PER_SIMULATION
+    DAMAGE_FROM_INCORRECT_ACTION, INPUT_SAMPLES_PER_SIMULATION, DAMAGE_PENALTY_FOR_HIDDEN_NEURONS
 from nagi.lifsnn import LIFSpikingNeuralNetwork
 from nagi.neat import Genome
 
@@ -13,6 +14,8 @@ class LogicGate(Enum):
     """
     Enum values are the sets containing the input cases where the output of the logic gate is 1.
     """
+
+    # Training
     A = {(1, 0), (1, 1)}
     B = {(0, 1), (1, 1)}
     NOT_A = {(0, 0), (0, 1)}
@@ -21,10 +24,20 @@ class LogicGate(Enum):
     CONSTANT_1 = {(0, 0), (0, 1), (1, 0), (1, 1)}
     XOR = {(0, 1), (1, 0)}
     XNOR = {(0, 0), (1, 1)}
+    # Testing
     AND = {(1, 1)}
     NAND = {(0, 0), (0, 1), (1, 0)}
     OR = {(0, 1), (1, 0), (1, 1)}
     NOR = {(0, 0)}
+
+    @staticmethod
+    def get_training_gates():
+        return [LogicGate.A, LogicGate.B, LogicGate.NOT_A, LogicGate.NOT_B, LogicGate.CONSTANT_0, LogicGate.CONSTANT_1,
+                LogicGate.XOR, LogicGate.XNOR]
+
+    @staticmethod
+    def get_testing_gates():
+        return [LogicGate.AND, LogicGate.NAND, LogicGate.OR, LogicGate.NOR]
 
 
 class TwoDimensionalAgent(object):
@@ -33,7 +46,7 @@ class TwoDimensionalAgent(object):
         self.key = key
         self.zero_actuator = 0
         self.one_actuator = 0
-        self.health_points = MAX_HEALTH_POINTS
+        self.health_points = MAX_HEALTH_POINTS_2D
         self.prediction = None
 
     def select_prediction(self):
@@ -53,17 +66,34 @@ class TwoDimensionalAgent(object):
 
 
 class TwoDimensionalEnvironment(object):
-    def __init__(self, high_frequency: int, low_frequency: int):
+    def __init__(self, high_frequency: int, low_frequency: int, testing=False):
         self.high_frequency = TwoDimensionalEnvironment._generate_spike_frequency(high_frequency)
         self.low_frequency = TwoDimensionalEnvironment._generate_spike_frequency(low_frequency)
         self.input_loadout = TwoDimensionalEnvironment._initialize_input_loadout()
-        self.logic_gate_iterator = cycle(LogicGate)
-        self.current_logic_gate = next(self.logic_gate_iterator)
+        self.testing = testing
+        self.current_logic_gate = LogicGate.AND if self.testing else LogicGate.A
         self.maximum_possible_lifetime = int((len(self.input_loadout) * NUM_TIME_STEPS) / DAMAGE_FROM_CORRECT_ACTION)
         self.minimum_lifetime = int((len(self.input_loadout) * NUM_TIME_STEPS) / DAMAGE_FROM_INCORRECT_ACTION)
 
     def mutate(self):
-        self.current_logic_gate = next(self.logic_gate_iterator)
+        if self.testing:
+            self.current_logic_gate = {
+                LogicGate.AND: LogicGate.NAND,
+                LogicGate.NAND: LogicGate.OR,
+                LogicGate.OR: LogicGate.NOR,
+                LogicGate.NOR: LogicGate
+            }[self.current_logic_gate]
+        else:
+            self.current_logic_gate = {
+                LogicGate.A: LogicGate.B,
+                LogicGate.B: LogicGate.NOT_A,
+                LogicGate.NOT_A: LogicGate.NOT_B,
+                LogicGate.NOT_B: LogicGate.CONSTANT_0,
+                LogicGate.CONSTANT_0: LogicGate.CONSTANT_1,
+                LogicGate.CONSTANT_1: LogicGate.XOR,
+                LogicGate.XOR: LogicGate.XNOR,
+                LogicGate.XNOR: LogicGate.A,
+            }[self.current_logic_gate]
 
     def deal_damage(self, agent: TwoDimensionalAgent, sample: Tuple[int, int]):
         prediction = agent.select_prediction()
@@ -79,7 +109,7 @@ class TwoDimensionalEnvironment(object):
                 damage = DAMAGE_FROM_INCORRECT_ACTION
         else:
             damage = DAMAGE_FROM_INCORRECT_ACTION
-        agent.health_points -= damage * 1.05**agent.spiking_neural_network.number_of_hidden_neurons
+        agent.health_points -= damage * DAMAGE_PENALTY_FOR_HIDDEN_NEURONS**agent.spiking_neural_network.number_of_hidden_neurons
 
     def simulate(self, agent: TwoDimensionalAgent) -> Tuple[int, float]:
         zero_actuator = []
@@ -90,7 +120,6 @@ class TwoDimensionalEnvironment(object):
             one_actuator = [t for t in one_actuator if t >= NUM_TIME_STEPS * (i - 1)]
             frequencies = self._get_initial_input_frequencies(sample)
             if i >= FLIP_POINT_2D and i % FLIP_POINT_2D == 0:
-                print(10 * "=")
                 self.mutate()
             for time_step in range(i * NUM_TIME_STEPS, (i + 1) * NUM_TIME_STEPS):
                 if agent.health_points <= 0:
@@ -109,20 +138,16 @@ class TwoDimensionalEnvironment(object):
                 agent.zero_actuator = TwoDimensionalEnvironment._count_spikes_within_time_window(time_step, zero_actuator)
                 agent.one_actuator = TwoDimensionalEnvironment._count_spikes_within_time_window(time_step, one_actuator)
                 self.deal_damage(agent, sample)
-            str_correct_wrong = "CORRECT" if (
-                                    agent.select_prediction() is 1 and sample in self.current_logic_gate.value) or (
-                                    agent.select_prediction() is 0 and sample not in self.current_logic_gate.value) \
-                                else "WRONG"
-            print(f'Agent health: {int(agent.health_points)}, i={i}, current_logic_gate: {self.current_logic_gate}, sample: {sample}, prediction: {agent.select_prediction()} {str_correct_wrong}')
-            print(f'Zero: {agent.zero_actuator}, One: {agent.one_actuator}')
         return agent.key, self._fitness(self.maximum_possible_lifetime)
 
-    def simulate_with_visualization(self, agent: TwoDimensionalAgent) -> Tuple[int, float, dict, dict, int]:
+    def simulate_with_visualization(self, agent: TwoDimensionalAgent) -> \
+            Tuple[int, float, dict, dict, int, List[Tuple[int, int]], List[Tuple[int, int]]]:
         zero_actuator = []
         one_actuator = []
         weights = {key: [] for key, _ in agent.spiking_neural_network.get_weights().items()}
         membrane_potentials = {key: [] for key, _ in agent.spiking_neural_network.get_membrane_potentials_and_thresholds().items()}
-
+        prediction_logger = []
+        actuator_logger = []
         inputs = self._get_initial_input_voltages()
         for i, sample in enumerate(self.input_loadout):
             zero_actuator = [t for t in zero_actuator if t >= NUM_TIME_STEPS * (i - 1)]
@@ -133,12 +158,14 @@ class TwoDimensionalEnvironment(object):
                 print(10 * "=")
                 self.mutate()
             for time_step in range(i * NUM_TIME_STEPS, (i + 1) * NUM_TIME_STEPS):
+                actuator_logger.append((agent.zero_actuator, agent.one_actuator))
+                prediction_logger.append(self._get_correct_wrong_int(agent, sample))
                 for key, weight in agent.spiking_neural_network.get_weights().items():
                     weights[key].append(weight)
                 for key, membrane_potential in agent.spiking_neural_network.get_membrane_potentials_and_thresholds().items():
                     membrane_potentials[key].append(membrane_potential)
                 if agent.health_points <= 0:
-                    return agent.key, self._fitness(time_step), weights, membrane_potentials, time_step
+                    return agent.key, self._fitness(time_step), weights, membrane_potentials, time_step, self._get_wrong_prediction_intervals(prediction_logger), actuator_logger
                 if time_step > 0:
                     frequencies = self._get_input_frequencies(time_step, sample, zero_actuator, one_actuator,
                                                               frequencies[4:])
@@ -152,17 +179,14 @@ class TwoDimensionalEnvironment(object):
                 agent.zero_actuator = TwoDimensionalEnvironment._count_spikes_within_time_window(time_step, zero_actuator)
                 agent.one_actuator = TwoDimensionalEnvironment._count_spikes_within_time_window(time_step, one_actuator)
                 self.deal_damage(agent, sample)
-            str_correct_wrong = "CORRECT" if (
-                                    agent.select_prediction() is 1 and sample in self.current_logic_gate.value) or (
-                                    agent.select_prediction() is 0 and sample not in self.current_logic_gate.value) \
-                                else "WRONG"
+            str_correct_wrong = self._get_correct_wrong_string(agent, sample)
             print(f'Agent health: {int(agent.health_points)}, i={i}, current_logic_gate: {self.current_logic_gate}, sample: {sample}, prediction: {agent.select_prediction()} {str_correct_wrong}')
             print(f'Zero: {agent.zero_actuator}, One: {agent.one_actuator}')
-        return agent.key, self._fitness(self.maximum_possible_lifetime), weights, membrane_potentials, self.maximum_possible_lifetime
+        return agent.key, self._fitness(self.maximum_possible_lifetime), weights, membrane_potentials, self.maximum_possible_lifetime, self._get_wrong_prediction_intervals(prediction_logger), actuator_logger
 
     @staticmethod
     def _initialize_input_loadout():
-        return [*((0, 0), (0, 1), (1, 0), (1, 1)) * int(FOOD_SAMPLES_PER_SIMULATION / 4)]
+        return [*((0, 0), (0, 1), (1, 0), (1, 1)) * int(INPUT_SAMPLES_PER_SIMULATION / 4)]
 
     def _get_input_frequencies(self, time_step: int, sample: Tuple[int, int], zero_actuator: List[int],
                                one_actuator: List[int], previous_reward_frequencies: List[int]) -> List[int]:
@@ -217,3 +241,16 @@ class TwoDimensionalEnvironment(object):
     def _generate_spike_frequency(frequency: int) -> int:
         return int(1 / (TIME_STEP_IN_MSEC / 1000) / frequency)
 
+    @staticmethod
+    def _get_wrong_prediction_intervals(values: List[int]):
+        return [(m.start(), m.end()) for m in re.finditer(r'0+', ''.join([str(x) for x in values]))]
+
+    def _get_correct_wrong_string(self, agent: TwoDimensionalAgent, sample: Tuple[int, int]) -> str:
+        return "CORRECT" if (
+            agent.select_prediction() is 1 and sample in self.current_logic_gate.value) or (
+            agent.select_prediction() is 0 and sample not in self.current_logic_gate.value) else "WRONG"
+
+    def _get_correct_wrong_int(self, agent: TwoDimensionalAgent, sample: Tuple[int, int]) -> int:
+        return 1 if (
+            agent.select_prediction() is 1 and sample in self.current_logic_gate.value) or (
+            agent.select_prediction() is 0 and sample not in self.current_logic_gate.value) else 0
