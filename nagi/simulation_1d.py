@@ -1,6 +1,9 @@
 import re
 from enum import Enum
 from typing import List, Tuple
+import random
+
+import numpy as np
 
 from nagi.constants import TIME_STEP_IN_MSEC, MAX_HEALTH_POINTS_1D, FLIP_POINT_1D, \
     ACTUATOR_WINDOW, LIF_SPIKE_VOLTAGE, NUM_TIME_STEPS, DAMAGE_FROM_CORRECT_ACTION, \
@@ -48,7 +51,7 @@ class OneDimensionalEnvironment(object):
     def __init__(self, high_frequency: int, low_frequency: int):
         self.high_frequency = OneDimensionalEnvironment._generate_spike_frequency(high_frequency)
         self.low_frequency = OneDimensionalEnvironment._generate_spike_frequency(low_frequency)
-        self.beneficial_food = Food.BLACK
+        self.beneficial_food = random.choice([food for food in Food])
         self.food_loadout = OneDimensionalEnvironment._initialize_food_loadout()
         self.maximum_possible_lifetime = int((len(self.food_loadout) * NUM_TIME_STEPS) / DAMAGE_FROM_CORRECT_ACTION)
         self.minimum_lifetime = int((len(self.food_loadout) * NUM_TIME_STEPS) / DAMAGE_FROM_INCORRECT_ACTION)
@@ -60,20 +63,9 @@ class OneDimensionalEnvironment(object):
         }[self.beneficial_food]
 
     def deal_damage(self, agent: OneDimensionalAgent, sample: Food):
-        action = agent.select_action()
-        if action is Action.EAT:
-            if sample is self.beneficial_food:
-                damage = DAMAGE_FROM_CORRECT_ACTION
-            else:
-                damage = DAMAGE_FROM_INCORRECT_ACTION
-        elif action is Action.AVOID:
-            if sample is self.beneficial_food:
-                damage = DAMAGE_FROM_INCORRECT_ACTION
-            else:
-                damage = DAMAGE_FROM_CORRECT_ACTION
-        else:
-            damage = DAMAGE_FROM_INCORRECT_ACTION
-        agent.health_points -= damage * DAMAGE_PENALTY_FOR_HIDDEN_NEURONS ** agent.spiking_neural_network.number_of_hidden_neurons
+        correct_partition, incorrect_partition = self._get_damage_partitions(agent, sample)
+        agent.health_points -= (correct_partition * DAMAGE_FROM_CORRECT_ACTION +
+                                incorrect_partition * DAMAGE_FROM_INCORRECT_ACTION) ** DAMAGE_PENALTY_FOR_HIDDEN_NEURONS
 
     def simulate(self, agent: OneDimensionalAgent) -> Tuple[int, float]:
         eat_actuator = []
@@ -165,7 +157,7 @@ class OneDimensionalEnvironment(object):
 
     @staticmethod
     def _initialize_food_loadout():
-        return [*[color for color in Food] * int(FOOD_SAMPLES_PER_SIMULATION / Food.__len__())]
+        return [*random.sample([color for color in Food], 2) * int(FOOD_SAMPLES_PER_SIMULATION / Food.__len__())]
 
     def _get_input_frequencies(self, time_step: int, sample: Food, eat_actuator: List[int], avoid_actuator: List[int],
                                previous_reward_frequencies: List[int]) -> List[int]:
@@ -201,8 +193,43 @@ class OneDimensionalEnvironment(object):
         else:
             return previous_reward_frequencies
 
-    def _fitness(self, lifetime: int):
+    def _fitness(self, lifetime: int) -> float:
+        """
+        Fitness function based on lifetime of an agent during simulation.
+
+        :param lifetime: The lifetime of the agent.
+        :return: The fitness score. Ranges between [0, 1].
+        """
         return (lifetime - self.minimum_lifetime) / (self.maximum_possible_lifetime - self.minimum_lifetime)
+
+    def _get_damage_partitions(self, agent: OneDimensionalAgent, sample: Food) -> Tuple[float, float]:
+        """
+        Utility function for determining how much damage to be dealt to an agent based on its actuators.
+
+        :param agent: The agent to be damaged.
+        :param sample: A food sample.
+        :return: Partitions for correct and incorrect damage. Sums to 1.
+        """
+
+        if sample is self.beneficial_food:
+            spikes_correct_action = agent.eat_actuator
+            spikes_incorrect_action = agent.avoid_actuator
+        else:
+            spikes_correct_action = agent.avoid_actuator
+            spikes_incorrect_action = agent.eat_actuator
+
+        total_spikes = agent.eat_actuator + agent.avoid_actuator
+        norm_spikes_correct_action = np.clip(spikes_correct_action, 0, 5) / 10
+        norm_spikes_incorrect_action = np.clip(spikes_incorrect_action, 0, 5) / 10
+
+        if total_spikes == 0:
+            correct_partition = 0.5
+        elif 0 < total_spikes <= 10:
+            correct_partition = norm_spikes_correct_action + (0.5 - norm_spikes_incorrect_action)
+        else:
+            correct_partition = spikes_correct_action / total_spikes
+
+        return correct_partition, 1 - correct_partition
 
     @staticmethod
     def _get_input_voltages(time_step: int, frequencies: List[int]):

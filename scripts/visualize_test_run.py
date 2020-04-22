@@ -22,7 +22,7 @@ if __name__ == '__main__':
         data = pickle.load(file)
 
     genome = get_most_fit_genome(data)
-    run_number = path[path.find('.') - 1]
+    run_number = path[path.find('.pkl') - 1]
     with open(f'{ROOT_PATH}/data/most_fit_genome_test_run_{run_number}.pkl', 'wb') as file:
         pickle.dump(genome, file)
 
