@@ -114,12 +114,13 @@ class TwoDimensionalEnvironment(object):
         return agent.key, self._fitness(self.maximum_possible_lifetime)
 
     def simulate_with_visualization(self, agent: TwoDimensionalAgent) -> \
-            Tuple[int, float, dict, dict, int, List[Tuple[int, int]], List[Tuple[int, int]]]:
+            Tuple[int, float, dict, dict, int, List[Tuple[int, int]], List[Tuple[int, int]], float, float]:
         zero_actuator = []
         one_actuator = []
         weights = {key: [] for key, _ in agent.spiking_neural_network.get_weights().items()}
         membrane_potentials = {key: [] for key, _ in agent.spiking_neural_network.get_membrane_potentials_and_thresholds().items()}
         prediction_logger = []
+        end_of_sample_prediction_logger = []
         actuator_logger = []
         inputs = self._get_initial_input_voltages()
         for i, sample in enumerate(self.input_loadout):
@@ -138,7 +139,15 @@ class TwoDimensionalEnvironment(object):
                 for key, membrane_potential in agent.spiking_neural_network.get_membrane_potentials_and_thresholds().items():
                     membrane_potentials[key].append(membrane_potential)
                 if agent.health_points <= 0:
-                    return agent.key, self._fitness(time_step), weights, membrane_potentials, time_step, self._get_wrong_prediction_intervals(prediction_logger), actuator_logger
+                    return (agent.key,
+                            self._fitness(time_step),
+                            weights,
+                            membrane_potentials,
+                            time_step,
+                            self._get_wrong_prediction_intervals(prediction_logger),
+                            actuator_logger,
+                            sum(prediction_logger) / len(prediction_logger),
+                            sum(end_of_sample_prediction_logger) / len(end_of_sample_prediction_logger))
                 if time_step > 0:
                     frequencies = self._get_input_frequencies(time_step, sample, zero_actuator, one_actuator,
                                                               frequencies[4:])
@@ -152,10 +161,19 @@ class TwoDimensionalEnvironment(object):
                 agent.zero_actuator = TwoDimensionalEnvironment._count_spikes_within_time_window(time_step, zero_actuator)
                 agent.one_actuator = TwoDimensionalEnvironment._count_spikes_within_time_window(time_step, one_actuator)
                 self.deal_damage(agent, sample)
+            end_of_sample_prediction_logger.append(self._get_correct_wrong_int(agent, sample))
             str_correct_wrong = self._get_correct_wrong_string(agent, sample)
             print(f'Agent health: {int(agent.health_points)}, i={i}, current_logic_gate: {self.current_logic_gate}, sample: {sample}, prediction: {agent.select_prediction()} {str_correct_wrong}')
             print(f'Zero: {agent.zero_actuator}, One: {agent.one_actuator}')
-        return agent.key, self._fitness(self.maximum_possible_lifetime), weights, membrane_potentials, self.maximum_possible_lifetime, self._get_wrong_prediction_intervals(prediction_logger), actuator_logger
+        return (agent.key,
+                self._fitness(self.maximum_possible_lifetime),
+                weights,
+                membrane_potentials,
+                self.maximum_possible_lifetime,
+                self._get_wrong_prediction_intervals(prediction_logger),
+                actuator_logger,
+                sum(prediction_logger) / len(prediction_logger),
+                sum(end_of_sample_prediction_logger) / len(end_of_sample_prediction_logger))
 
     @staticmethod
     def _initialize_input_loadout():
@@ -219,6 +237,9 @@ class TwoDimensionalEnvironment(object):
         :param sample: A food sample.
         :return: Partitions for correct and incorrect damage. Sums to 1.
         """
+
+        if agent.select_prediction() is None:
+            return 0, 1.0
 
         if sample in self.current_logic_gate.value:
             spikes_correct_prediction = agent.one_actuator

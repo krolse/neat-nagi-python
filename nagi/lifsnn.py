@@ -214,11 +214,22 @@ class LIFSpikingNeuralNetwork(object):
         for connection_gene in genome.get_enabled_connections():
             node_inputs[connection_gene.destination_node].append(connection_gene.origin_node)
 
-        neurons = {key: LIFSpikingNeuron(inputs,
-                                         learning_nodes[key].learning_rule,
-                                         learning_nodes[key].is_inhibitory,
-                                         learning_nodes[key].stdp_parameters,
-                                         learning_nodes[key].bias)
-                   for key, inputs in node_inputs.items()}
+        # try block needed for legacy genomes where nodes lack bias.
+        # TODO: Remove except at later point.
+        try:
+            neurons = {key: LIFSpikingNeuron(inputs,
+                                             learning_nodes[key].learning_rule,
+                                             learning_nodes[key].is_inhibitory,
+                                             learning_nodes[key].stdp_parameters,
+                                             learning_nodes[key].bias)
+                       for key, inputs in node_inputs.items()}
+
+        except AttributeError:
+            neurons = {key: LIFSpikingNeuron(inputs,
+                                             learning_nodes[key].learning_rule,
+                                             learning_nodes[key].is_inhibitory,
+                                             learning_nodes[key].stdp_parameters,
+                                             False)
+                       for key, inputs in node_inputs.items()}
 
         return LIFSpikingNeuralNetwork(neurons, input_keys, output_keys)

@@ -8,14 +8,21 @@ from nagi.constants import FLIP_POINT_1D, NUM_TIME_STEPS, RED, BLUE, GREEN
 from nagi.simulation_1d import OneDimensionalEnvironment, OneDimensionalAgent
 from nagi.visualization import visualize_genome
 
-with open(f'{fileopenbox(default=f"{ROOT_PATH}/data/*genome*.pkl" )}', 'rb') as file:
+with open(f'{fileopenbox(default=f"{ROOT_PATH}/data/*genome*.pkl")}', 'rb') as file:
     test_genome = pickle.load(file)
 
 agent = OneDimensionalAgent.create_agent(test_genome)
 visualize_genome(test_genome, True)
 environment = OneDimensionalEnvironment(50, 5)
-_, fitness, weights, membrane_potentials, time_step, intervals, actuators = environment.simulate_with_visualization(
-    agent)
+(_,
+ fitness,
+ weights,
+ membrane_potentials,
+ time_step,
+ intervals,
+ actuators,
+ accuracy,
+ end_of_sample_accuracy) = environment.simulate_with_visualization(agent)
 
 number_of_neurons = len(membrane_potentials.keys())
 number_of_weights = len(weights.keys())
@@ -71,5 +78,8 @@ avoid_actuators = [actuator[1] for actuator in actuators]
 plt.plot(t_values, eat_actuators, color=GREEN)
 plt.plot(t_values, avoid_actuators, color=BLUE)
 add_vertical_lines_and_background(max(max(eat_actuators), max(avoid_actuators)) + 2)
-print(f'Fitness: {fitness}')
+print(f'\n **** Results ****')
+print(f'Fitness: {fitness:.3f}')
+print(f'Accuracy: {accuracy * 100:.1f}%')
+print(f'End of sample accuracy: {end_of_sample_accuracy*100:.1f}%')
 plt.show()
