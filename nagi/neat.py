@@ -15,7 +15,7 @@ from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, ADD_N
     SYMMETRIC_STD_PLUS_INIT_RANGE, ASYMMETRIC_A_INIT_RANGE, ASYMMETRIC_TAU_INIT_RANGE, SYMMETRIC_A_PLUS_MUTATE_SCALE, \
     SYMMETRIC_A_MINUS_MUTATE_SCALE, SYMMETRIC_STD_PLUS_MUTATE_SCALE, ASYMMETRIC_A_MUTATE_SCALE, \
     ASYMMETRIC_TAU_MUTATE_SCALE, SPECIES_PROTECTION_LIMIT, SPECIES_STAGNATION_LIMIT, SYMMETRIC_STD_MINUS_INIT_RANGE, \
-    SYMMETRIC_STD_MINUS_MUTATE_SCALE
+    SYMMETRIC_STD_MINUS_MUTATE_SCALE, BIAS_INIT_PROBABILITIES, BIAS_MUTATE_RATE
 
 
 class LearningRule(Enum):
@@ -43,16 +43,19 @@ class NeuralNodeGene(NodeGene):
         self.is_inhibitory = is_inhibitory
         self.learning_rule = self._initialize_learning_rule()
         self.stdp_parameters = self._initialize_stdp_parameters()
+        self.bias = np.random.choice([True, False], p=BIAS_INIT_PROBABILITIES)
 
     @abstractmethod
     def mutate(self):
+        if np.random.random() < BIAS_MUTATE_RATE:
+            self.bias = not self.bias
+
         if np.random.random() < LEARNING_RULE_MUTATE_RATE:
             previous_learning_rule = self.learning_rule
             self.learning_rule = random.choice([rule for rule in LearningRule if rule is not self.learning_rule])
             if previous_learning_rule.is_symmetric() ^ self.learning_rule.is_symmetric():
                 self.stdp_parameters = self._initialize_stdp_parameters()
                 return
-
         r = np.random.random()
         if r < STDP_PARAMETERS_MUTATE_RATE:
             self._mutate_stdp_parameters()
