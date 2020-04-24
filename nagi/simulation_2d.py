@@ -108,7 +108,8 @@ class TwoDimensionalEnvironment(object):
                     zero_actuator.append(time_step)
                 if one:
                     one_actuator.append(time_step)
-                agent.zero_actuator = TwoDimensionalEnvironment._count_spikes_within_time_window(time_step, zero_actuator)
+                agent.zero_actuator = TwoDimensionalEnvironment._count_spikes_within_time_window(time_step,
+                                                                                                 zero_actuator)
                 agent.one_actuator = TwoDimensionalEnvironment._count_spikes_within_time_window(time_step, one_actuator)
                 self.deal_damage(agent, sample)
         return agent.key, self._fitness(self.maximum_possible_lifetime)
@@ -118,7 +119,8 @@ class TwoDimensionalEnvironment(object):
         zero_actuator = []
         one_actuator = []
         weights = {key: [] for key, _ in agent.spiking_neural_network.get_weights().items()}
-        membrane_potentials = {key: [] for key, _ in agent.spiking_neural_network.get_membrane_potentials_and_thresholds().items()}
+        membrane_potentials = {key: [] for key, _ in
+                               agent.spiking_neural_network.get_membrane_potentials_and_thresholds().items()}
         prediction_logger = []
         end_of_sample_prediction_logger = []
         actuator_logger = []
@@ -158,12 +160,14 @@ class TwoDimensionalEnvironment(object):
                     zero_actuator.append(time_step)
                 if one:
                     one_actuator.append(time_step)
-                agent.zero_actuator = TwoDimensionalEnvironment._count_spikes_within_time_window(time_step, zero_actuator)
+                agent.zero_actuator = TwoDimensionalEnvironment._count_spikes_within_time_window(time_step,
+                                                                                                 zero_actuator)
                 agent.one_actuator = TwoDimensionalEnvironment._count_spikes_within_time_window(time_step, one_actuator)
                 self.deal_damage(agent, sample)
             end_of_sample_prediction_logger.append(self._get_correct_wrong_int(agent, sample))
             str_correct_wrong = self._get_correct_wrong_string(agent, sample)
-            print(f'Agent health: {int(agent.health_points)}, i={i}, current_logic_gate: {self.current_logic_gate}, sample: {sample}, prediction: {agent.select_prediction()} {str_correct_wrong}')
+            print(
+                f'Agent health: {int(agent.health_points)}, i={i}, current_logic_gate: {self.current_logic_gate}, sample: {sample}, prediction: {agent.select_prediction()} {str_correct_wrong}')
             print(f'Zero: {agent.zero_actuator}, One: {agent.one_actuator}')
         return (agent.key,
                 self._fitness(self.maximum_possible_lifetime),
@@ -249,12 +253,13 @@ class TwoDimensionalEnvironment(object):
             spikes_incorrect_prediction = agent.one_actuator
 
         total_spikes = agent.zero_actuator + agent.one_actuator
-        norm_spikes_correct_prediction = np.clip(spikes_correct_prediction, 0, 5) / 10
-        norm_spikes_incorrect_prediction = np.clip(spikes_incorrect_prediction, 0, 5) / 10
 
         if total_spikes == 0:
             correct_partition = 0.5
         elif 0 < total_spikes <= 10:
+            norm_spikes_correct_prediction = np.clip(spikes_correct_prediction, 0, 5) / 10
+            norm_spikes_incorrect_prediction = np.clip(spikes_incorrect_prediction, 0, 5) / 10
+
             correct_partition = norm_spikes_correct_prediction + (0.5 - norm_spikes_incorrect_prediction)
         else:
             correct_partition = spikes_correct_prediction / total_spikes
@@ -283,11 +288,9 @@ class TwoDimensionalEnvironment(object):
         return [(m.start(), m.end()) for m in re.finditer(r'0+', ''.join([str(x) for x in values]))]
 
     def _get_correct_wrong_string(self, agent: TwoDimensionalAgent, sample: Tuple[int, int]) -> str:
-        return "CORRECT" if (
-            agent.select_prediction() == 1 and sample in self.current_logic_gate.value) or (
-            agent.select_prediction() == 0 and sample not in self.current_logic_gate.value) else "WRONG"
+        return "CORRECT" if (agent.select_prediction() == 1 and sample in self.current_logic_gate.value) or (
+                agent.select_prediction() == 0 and sample not in self.current_logic_gate.value) else "WRONG"
 
     def _get_correct_wrong_int(self, agent: TwoDimensionalAgent, sample: Tuple[int, int]) -> int:
-        return 1 if (
-            agent.select_prediction() == 1 and sample in self.current_logic_gate.value) or (
-            agent.select_prediction() == 0 and sample not in self.current_logic_gate.value) else 0
+        return 1 if (agent.select_prediction() == 1 and sample in self.current_logic_gate.value) or (
+                agent.select_prediction() == 0 and sample not in self.current_logic_gate.value) else 0

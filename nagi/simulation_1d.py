@@ -229,6 +229,9 @@ class OneDimensionalEnvironment(object):
         :return: Partitions for correct and incorrect damage. Sums to 1.
         """
 
+        if agent.select_action() is None:
+            return 0, 1.0
+
         if sample is self.beneficial_food:
             spikes_correct_action = agent.eat_actuator
             spikes_incorrect_action = agent.avoid_actuator
@@ -237,12 +240,13 @@ class OneDimensionalEnvironment(object):
             spikes_incorrect_action = agent.eat_actuator
 
         total_spikes = agent.eat_actuator + agent.avoid_actuator
-        norm_spikes_correct_action = np.clip(spikes_correct_action, 0, 5) / 10
-        norm_spikes_incorrect_action = np.clip(spikes_incorrect_action, 0, 5) / 10
 
         if total_spikes == 0:
             correct_partition = 0.5
         elif 0 < total_spikes <= 10:
+            norm_spikes_correct_action = np.clip(spikes_correct_action, 0, 5) / 10
+            norm_spikes_incorrect_action = np.clip(spikes_incorrect_action, 0, 5) / 10
+
             correct_partition = norm_spikes_correct_action + (0.5 - norm_spikes_incorrect_action)
         else:
             correct_partition = spikes_correct_action / total_spikes
@@ -271,11 +275,9 @@ class OneDimensionalEnvironment(object):
         return [(m.start(), m.end()) for m in re.finditer(r'0+', ''.join([str(x) for x in values]))]
 
     def _get_correct_wrong_string(self, agent: OneDimensionalAgent, sample: Food) -> str:
-        return "CORRECT" if (
-                                    agent.select_action() is Action.EAT and sample is self.beneficial_food) or (
-                                    agent.select_action() is Action.AVOID and sample is not self.beneficial_food) else "WRONG"
+        return "CORRECT" if (agent.select_action() is Action.EAT and sample is self.beneficial_food) or (
+                agent.select_action() is Action.AVOID and sample is not self.beneficial_food) else "WRONG"
 
     def _get_correct_wrong_int(self, agent: OneDimensionalAgent, sample: Food) -> int:
-        return 1 if (
-                            agent.select_action() is Action.EAT and sample is self.beneficial_food) or (
-                            agent.select_action() is Action.AVOID and sample is not self.beneficial_food) else 0
+        return 1 if (agent.select_action() is Action.EAT and sample is self.beneficial_food) or (
+                agent.select_action() is Action.AVOID and sample is not self.beneficial_food) else 0
