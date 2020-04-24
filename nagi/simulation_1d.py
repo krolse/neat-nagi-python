@@ -1,8 +1,11 @@
 import re
 from enum import Enum
 from typing import List, Tuple
+import random
 
-from nagi.constants import TIME_STEP_IN_MSEC, MAX_HEALTH_POINTS, FLIP_POINT_1D, \
+import numpy as np
+
+from nagi.constants import TIME_STEP_IN_MSEC, MAX_HEALTH_POINTS_1D, FLIP_POINT_1D, \
     ACTUATOR_WINDOW, LIF_SPIKE_VOLTAGE, NUM_TIME_STEPS, DAMAGE_FROM_CORRECT_ACTION, \
     DAMAGE_FROM_INCORRECT_ACTION, FOOD_SAMPLES_PER_SIMULATION, DAMAGE_PENALTY_FOR_HIDDEN_NEURONS
 from nagi.lifsnn import LIFSpikingNeuralNetwork
@@ -25,7 +28,7 @@ class OneDimensionalAgent(object):
         self.key = key
         self.eat_actuator = 0
         self.avoid_actuator = 0
-        self.health_points = MAX_HEALTH_POINTS
+        self.health_points = MAX_HEALTH_POINTS_1D
         self.current_action = None
 
     def select_action(self):
@@ -48,7 +51,7 @@ class OneDimensionalEnvironment(object):
     def __init__(self, high_frequency: int, low_frequency: int):
         self.high_frequency = OneDimensionalEnvironment._generate_spike_frequency(high_frequency)
         self.low_frequency = OneDimensionalEnvironment._generate_spike_frequency(low_frequency)
-        self.beneficial_food = Food.BLACK
+        self.beneficial_food = random.choice([food for food in Food])
         self.food_loadout = OneDimensionalEnvironment._initialize_food_loadout()
         self.maximum_possible_lifetime = int((len(self.food_loadout) * NUM_TIME_STEPS) / DAMAGE_FROM_CORRECT_ACTION)
         self.minimum_lifetime = int((len(self.food_loadout) * NUM_TIME_STEPS) / DAMAGE_FROM_INCORRECT_ACTION)
@@ -60,20 +63,9 @@ class OneDimensionalEnvironment(object):
         }[self.beneficial_food]
 
     def deal_damage(self, agent: OneDimensionalAgent, sample: Food):
-        action = agent.select_action()
-        if action is Action.EAT:
-            if sample is self.beneficial_food:
-                damage = DAMAGE_FROM_CORRECT_ACTION
-            else:
-                damage = DAMAGE_FROM_INCORRECT_ACTION
-        elif action is Action.AVOID:
-            if sample is self.beneficial_food:
-                damage = DAMAGE_FROM_INCORRECT_ACTION
-            else:
-                damage = DAMAGE_FROM_CORRECT_ACTION
-        else:
-            damage = DAMAGE_FROM_INCORRECT_ACTION
-        agent.health_points -= damage * DAMAGE_PENALTY_FOR_HIDDEN_NEURONS ** agent.spiking_neural_network.number_of_hidden_neurons
+        correct_partition, incorrect_partition = self._get_damage_partitions(agent, sample)
+        agent.health_points -= (correct_partition * DAMAGE_FROM_CORRECT_ACTION +
+                                incorrect_partition * DAMAGE_FROM_INCORRECT_ACTION) ** DAMAGE_PENALTY_FOR_HIDDEN_NEURONS
 
     def simulate(self, agent: OneDimensionalAgent) -> Tuple[int, float]:
         eat_actuator = []
@@ -113,13 +105,14 @@ class OneDimensionalEnvironment(object):
         return agent.key, self._fitness(self.maximum_possible_lifetime)
 
     def simulate_with_visualization(self, agent: OneDimensionalAgent) \
-            -> Tuple[int, float, dict, dict, int, List[Tuple[int, int]], List[Tuple[int, int]]]:
+            -> Tuple[int, float, dict, dict, int, List[Tuple[int, int]], List[Tuple[int, int]], float, float]:
         eat_actuator = []
         avoid_actuator = []
         weights = {key: [] for key, _ in agent.spiking_neural_network.get_weights().items()}
         membrane_potentials = {key: [] for key, _ in
                                agent.spiking_neural_network.get_membrane_potentials_and_thresholds().items()}
         action_logger = []
+        end_of_sample_action_logger = []
         actuator_logger = []
 
         inputs = self._get_initial_input_voltages()
@@ -140,7 +133,16 @@ class OneDimensionalEnvironment(object):
                     membrane_potentials[key].append(membrane_potential)
 
                 if agent.health_points <= 0:
-                    return agent.key, self._fitness(time_step), weights, membrane_potentials, time_step, self._get_wrong_action_intervals(action_logger), actuator_logger
+                    return (agent.key,
+                            self._fitness(time_step),
+                            weights,
+                            membrane_potentials,
+                            time_step,
+                            self._get_wrong_action_intervals(action_logger),
+                            actuator_logger,
+                            sum(action_logger) / len(action_logger),
+                            sum(end_of_sample_action_logger) / len(end_of_sample_action_logger))
+
                 if time_step > 0:
                     frequencies = self._get_input_frequencies(time_step, sample, eat_actuator, avoid_actuator,
                                                               frequencies[2:])
@@ -157,15 +159,23 @@ class OneDimensionalEnvironment(object):
                                                                                                   avoid_actuator)
                 self.deal_damage(agent, sample)
             str_correct_wrong = self._get_correct_wrong_string(agent, sample)
+            end_of_sample_action_logger.append(self._get_correct_wrong_int(agent, sample))
             print(
                 f'Agent health: {int(agent.health_points)}, i={i}, beneficial food: {self.beneficial_food}, sample: {sample}, action: {agent.select_action()} {str_correct_wrong}')
             print(f'Eat: {agent.eat_actuator}, Avoid: {agent.avoid_actuator}')
-        return agent.key, self._fitness(
-            self.maximum_possible_lifetime), weights, membrane_potentials, self.maximum_possible_lifetime, self._get_wrong_action_intervals(action_logger), actuator_logger
+        return (agent.key,
+                self._fitness(self.maximum_possible_lifetime),
+                weights,
+                membrane_potentials,
+                self.maximum_possible_lifetime,
+                self._get_wrong_action_intervals(action_logger),
+                actuator_logger,
+                sum(action_logger) / len(action_logger),
+                sum(end_of_sample_action_logger) / len(end_of_sample_action_logger))
 
     @staticmethod
     def _initialize_food_loadout():
-        return [*[color for color in Food] * int(FOOD_SAMPLES_PER_SIMULATION / Food.__len__())]
+        return [*random.sample([color for color in Food], 2) * int(FOOD_SAMPLES_PER_SIMULATION / Food.__len__())]
 
     def _get_input_frequencies(self, time_step: int, sample: Food, eat_actuator: List[int], avoid_actuator: List[int],
                                previous_reward_frequencies: List[int]) -> List[int]:
@@ -201,8 +211,47 @@ class OneDimensionalEnvironment(object):
         else:
             return previous_reward_frequencies
 
-    def _fitness(self, lifetime: int):
+    def _fitness(self, lifetime: int) -> float:
+        """
+        Fitness function based on lifetime of an agent during simulation.
+
+        :param lifetime: The lifetime of the agent.
+        :return: The fitness score. Ranges between [0, 1].
+        """
         return (lifetime - self.minimum_lifetime) / (self.maximum_possible_lifetime - self.minimum_lifetime)
+
+    def _get_damage_partitions(self, agent: OneDimensionalAgent, sample: Food) -> Tuple[float, float]:
+        """
+        Utility function for determining how much damage to be dealt to an agent based on its actuators.
+
+        :param agent: The agent to be damaged.
+        :param sample: A food sample.
+        :return: Partitions for correct and incorrect damage. Sums to 1.
+        """
+
+        if agent.select_action() is None:
+            return 0, 1.0
+
+        if sample is self.beneficial_food:
+            spikes_correct_action = agent.eat_actuator
+            spikes_incorrect_action = agent.avoid_actuator
+        else:
+            spikes_correct_action = agent.avoid_actuator
+            spikes_incorrect_action = agent.eat_actuator
+
+        total_spikes = agent.eat_actuator + agent.avoid_actuator
+
+        if total_spikes == 0:
+            correct_partition = 0.5
+        elif 0 < total_spikes <= 10:
+            norm_spikes_correct_action = np.clip(spikes_correct_action, 0, 5) / 10
+            norm_spikes_incorrect_action = np.clip(spikes_incorrect_action, 0, 5) / 10
+
+            correct_partition = norm_spikes_correct_action + (0.5 - norm_spikes_incorrect_action)
+        else:
+            correct_partition = spikes_correct_action / total_spikes
+
+        return correct_partition, 1 - correct_partition
 
     @staticmethod
     def _get_input_voltages(time_step: int, frequencies: List[int]):
@@ -226,11 +275,9 @@ class OneDimensionalEnvironment(object):
         return [(m.start(), m.end()) for m in re.finditer(r'0+', ''.join([str(x) for x in values]))]
 
     def _get_correct_wrong_string(self, agent: OneDimensionalAgent, sample: Food) -> str:
-        return "CORRECT" if (
-            agent.select_action() is Action.EAT and sample is self.beneficial_food) or (
-            agent.select_action() is Action.AVOID and sample is not self.beneficial_food) else "WRONG"
+        return "CORRECT" if (agent.select_action() is Action.EAT and sample is self.beneficial_food) or (
+                agent.select_action() is Action.AVOID and sample is not self.beneficial_food) else "WRONG"
 
     def _get_correct_wrong_int(self, agent: OneDimensionalAgent, sample: Food) -> int:
-        return 1 if (
-            agent.select_action() is Action.EAT and sample is self.beneficial_food) or (
-            agent.select_action() is Action.AVOID and sample is not self.beneficial_food) else 0
+        return 1 if (agent.select_action() is Action.EAT and sample is self.beneficial_food) or (
+                agent.select_action() is Action.AVOID and sample is not self.beneficial_food) else 0

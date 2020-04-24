@@ -6,7 +6,7 @@ import numpy as np
 from nagi.constants import STDP_PARAMS, STDP_LEARNING_WINDOW, NEURON_WEIGHT_BUDGET, \
     THRESHOLD_THETA_INCREMENT_RATE, THRESHOLD_THETA_DECAY_RATE, \
     LIF_RESTING_MEMBRANE_POTENTIAL, LIF_MEMBRANE_POTENTIAL_THRESHOLD, LIF_SPIKE_VOLTAGE, \
-    LIF_MEMBRANE_DECAY_RATE
+    LIF_MEMBRANE_DECAY_RATE, LIF_BIAS
 from nagi.neat import Genome, NeuralNodeGene, InputNodeGene, OutputNodeGene
 from nagi.stdp import *
 
@@ -20,7 +20,7 @@ class LIFSpikingNeuron(object):
     """Class representing a single spiking neuron."""
 
     def __init__(self, inputs: List[int], learning_rule: LearningRule, is_inhibitory: bool,
-                 stdp_parameters: Dict[str, float]):
+                 stdp_parameters: Dict[str, float], bias: bool):
         """
         :param inputs: A dictionary of incoming connection weights.
         """
@@ -30,6 +30,7 @@ class LIFSpikingNeuron(object):
         self.learning_rule = learning_rule
         self.is_inhibitory = is_inhibitory
         self.stdp_parameters = stdp_parameters
+        self.bias = LIF_BIAS if bias else 0
 
         self.membrane_potential = LIF_RESTING_MEMBRANE_POTENTIAL
         self.fired = 0
@@ -176,7 +177,7 @@ class LIFSpikingNeuralNetwork(object):
                 if in_value:
                     neuron.input_spike_timings[key].append(0)
 
-                sum_of_inputs += weight * in_value
+                sum_of_inputs += weight * in_value + neuron.bias
 
             neuron.membrane_potential = max(
                 neuron.membrane_potential + (sum_of_inputs - neuron.membrane_potential * LIF_MEMBRANE_DECAY_RATE),
@@ -213,8 +214,22 @@ class LIFSpikingNeuralNetwork(object):
         for connection_gene in genome.get_enabled_connections():
             node_inputs[connection_gene.destination_node].append(connection_gene.origin_node)
 
-        neurons = {key: LIFSpikingNeuron(inputs, learning_nodes[key].learning_rule,
-                                         learning_nodes[key].is_inhibitory, learning_nodes[key].stdp_parameters)
-                   for key, inputs in node_inputs.items()}
+        # try block needed for legacy genomes where nodes lack bias.
+        # TODO: Remove except at later point.
+        try:
+            neurons = {key: LIFSpikingNeuron(inputs,
+                                             learning_nodes[key].learning_rule,
+                                             learning_nodes[key].is_inhibitory,
+                                             learning_nodes[key].stdp_parameters,
+                                             learning_nodes[key].bias)
+                       for key, inputs in node_inputs.items()}
+
+        except AttributeError:
+            neurons = {key: LIFSpikingNeuron(inputs,
+                                             learning_nodes[key].learning_rule,
+                                             learning_nodes[key].is_inhibitory,
+                                             learning_nodes[key].stdp_parameters,
+                                             False)
+                       for key, inputs in node_inputs.items()}
 
         return LIFSpikingNeuralNetwork(neurons, input_keys, output_keys)
