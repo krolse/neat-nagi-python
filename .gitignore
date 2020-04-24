@@ -106,3 +106,4 @@ venv.bak/
 # PyCharm
 .idea
 data/*
+!data/.gitkeep
