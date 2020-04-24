@@ -243,9 +243,9 @@ class OneDimensionalEnvironment(object):
 
         if total_spikes == 0:
             correct_partition = 0.5
-        elif 0 < total_spikes <= 10:
-            norm_spikes_correct_action = np.clip(spikes_correct_action, 0, 5) / 10
-            norm_spikes_incorrect_action = np.clip(spikes_incorrect_action, 0, 5) / 10
+        elif 0 < total_spikes <= 6:
+            norm_spikes_correct_action = np.clip(spikes_correct_action, 0, 3) / 6
+            norm_spikes_incorrect_action = np.clip(spikes_incorrect_action, 0, 3) / 6
 
             correct_partition = norm_spikes_correct_action + (0.5 - norm_spikes_incorrect_action)
         else:
