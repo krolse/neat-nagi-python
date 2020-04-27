@@ -414,7 +414,8 @@ class Population(object):
         total_adjusted_fitness = self._get_total_sum_of_adjusted_fitnesses(fitnesses)
         sum_of_adjusted_fitnesses_by_species = self._get_sum_of_adjusted_fitnesses_by_species(fitnesses)
         assigned_number_of_offspring = {
-            species_id: max(round(species_fitness * self._population_size / total_adjusted_fitness), 2)
+            species_id: 2 if total_adjusted_fitness == 0 else max(
+                round(species_fitness * self._population_size / total_adjusted_fitness), 2)
             for species_id, species_fitness in sum_of_adjusted_fitnesses_by_species.items()}
 
         self._tune_assigned_offspring_to_population_size(assigned_number_of_offspring)

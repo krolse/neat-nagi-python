@@ -37,8 +37,8 @@ input_size, output_size = 4, 2
 high_frequency = 50
 low_frequency = 5
 
-population_size = 100
-number_of_generations = 100
+population_size = 10
+number_of_generations = 5
 
 
 if __name__ == '__main__':
@@ -57,7 +57,7 @@ if __name__ == '__main__':
         agents = list([OneDimensionalAgent.create_agent(genome) for genome in population.genomes.values()])
         results = tqdm.tqdm(pool.imap_unordered(env.simulate, agents), total=(len(agents)))
         highest_fitness = max([result[1] for result in results])
-        print(f'Highest fitness: {highest_fitness}')
+        print(f'Highest fitness: {highest_fitness:.3f}')
         fitnesses = {result[0]: result[1] for result in results}
         generations[i] = {'population': deepcopy(population), 'fitnesses': fitnesses}
 
