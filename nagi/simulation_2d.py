@@ -7,7 +7,8 @@ import numpy as np
 
 from nagi.constants import TIME_STEP_IN_MSEC, MAX_HEALTH_POINTS_2D, FLIP_POINT_2D, \
     ACTUATOR_WINDOW, LIF_SPIKE_VOLTAGE, NUM_TIME_STEPS, DAMAGE_FROM_CORRECT_ACTION, \
-    DAMAGE_FROM_INCORRECT_ACTION, INPUT_SAMPLES_PER_SIMULATION, DAMAGE_PENALTY_FOR_HIDDEN_NEURONS
+    DAMAGE_FROM_INCORRECT_ACTION, INPUT_SAMPLES_PER_SIMULATION, DAMAGE_PENALTY_FOR_HIDDEN_NEURONS, PRINT_GREEN, \
+    PRINT_RED
 from nagi.lifsnn import LIFSpikingNeuralNetwork
 from nagi.neat import Genome
 
@@ -288,8 +289,14 @@ class TwoDimensionalEnvironment(object):
         return [(m.start(), m.end()) for m in re.finditer(r'0+', ''.join([str(x) for x in values]))]
 
     def _get_correct_wrong_string(self, agent: TwoDimensionalAgent, sample: Tuple[int, int]) -> str:
-        return "CORRECT" if (agent.select_prediction() == 1 and sample in self.current_logic_gate.value) or (
-                agent.select_prediction() == 0 and sample not in self.current_logic_gate.value) else "WRONG"
+        def green(s):
+            return f'{PRINT_GREEN}{s}\033[m'
+
+        def red(s):
+            return f'{PRINT_RED}{s}\033[m'
+
+        return green("CORRECT") if (agent.select_prediction() == 1 and sample in self.current_logic_gate.value) or (
+                agent.select_prediction() == 0 and sample not in self.current_logic_gate.value) else red("WRONG")
 
     def _get_correct_wrong_int(self, agent: TwoDimensionalAgent, sample: Tuple[int, int]) -> int:
         return 1 if (agent.select_prediction() == 1 and sample in self.current_logic_gate.value) or (
