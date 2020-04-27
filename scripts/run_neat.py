@@ -56,9 +56,9 @@ if __name__ == '__main__':
         env = OneDimensionalEnvironment(high_frequency, low_frequency)
         agents = list([OneDimensionalAgent.create_agent(genome) for genome in population.genomes.values()])
         results = tqdm.tqdm(pool.imap_unordered(env.simulate, agents), total=(len(agents)))
-        highest_fitness = max([result[1] for result in results])
-        print(f'Highest fitness: {highest_fitness:.3f}')
         fitnesses = {result[0]: result[1] for result in results}
+        highest_fitness = max(fitnesses.values())
+        print(f'Highest fitness: {highest_fitness:.3f}')
         generations[i] = {'population': deepcopy(population), 'fitnesses': fitnesses}
 
         with open(pickle_path, 'wb') as file:
