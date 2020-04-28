@@ -1,10 +1,12 @@
 import pickle
 
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 from easygui import fileopenbox
 
 from definitions import ROOT_PATH
-from nagi.constants import FLIP_POINT_1D, NUM_TIME_STEPS, RED, BLUE, GREEN
+from nagi.constants import FLIP_POINT_1D, NUM_TIME_STEPS, RED, BLUE, GREEN, TIME_STEP_IN_MSEC
 from nagi.simulation_1d import OneDimensionalEnvironment, OneDimensionalAgent
 from nagi.visualization import visualize_genome
 
@@ -27,6 +29,7 @@ environment = OneDimensionalEnvironment(50, 5)
 number_of_neurons = len(membrane_potentials.keys())
 number_of_weights = len(weights.keys())
 t_values = range(time_step + 1)
+alpha = 0.85
 
 
 def add_vertical_lines_and_background(height: int):
@@ -47,17 +50,32 @@ def add_vertical_lines_and_background(height: int):
         plt.gca().add_patch(rect)
 
 
+def add_fig_legend(*args):
+    colors = [arg[0] for arg in args]
+    labels = [arg[1] for arg in args]
+    plt.figlegend((*(Line2D([0], [0], color=color) for color in colors),
+                   Line2D([0], [0], color='gray', linestyle='--'),
+                   Line2D([0], [0], color='k'),
+                   Patch(color=RED)),
+                  (*(label for label in labels), 'sample change', 'flip point', 'wrong region'),
+                  loc='upper left')
+
+
 # Membrane potential
 fig = plt.figure()
-plt.title("Neuron membrane potentials")
+fig.suptitle("Neuron membrane potentials")
 for i, key in enumerate(sorted(membrane_potentials.keys())):
     plt.subplot(number_of_neurons, 1, i + 1)
     plt.ylabel(f"{key}")
-    plt.xlabel("Time (in ms)")
+    if i == len(membrane_potentials) - 1:
+        plt.xlabel("Time (in ms)")
+    else:
+        plt.gca().axes.xaxis.set_visible(False)
     plt.plot(t_values, [membrane_potential[0] for membrane_potential in membrane_potentials[key]],
-             color=GREEN, linestyle='-')
+             color=GREEN, linestyle='-', alpha=alpha)
     plt.plot(t_values, [membrane_potential[1] for membrane_potential in membrane_potentials[key]],
-             color=BLUE, linestyle='-')
+             color=BLUE, linestyle='-', alpha=alpha)
+    add_fig_legend((GREEN, 'membrane potential'), (BLUE, 'membrane threshold'))
     add_vertical_lines_and_background(4)
 
 # Weights
@@ -66,20 +84,26 @@ plt.title("Weights")
 for i, key in enumerate(sorted(weights.keys(), key=lambda x: x[1])):
     plt.subplot(number_of_weights, 1, i + 1)
     plt.ylabel(f"{key}")
-    plt.xlabel("Time (in ms)")
+    if i == len(weights) - 1:
+        plt.xlabel("Time (in ms)")
+    else:
+        plt.gca().axes.xaxis.set_visible(False)
     plt.plot(t_values, weights[key], color=BLUE, linestyle='-')
+    add_fig_legend((BLUE, 'weight'))
     add_vertical_lines_and_background(2)
 
 # Actuator history
 fig = plt.figure()
-plt.title("Actuator history")
+fig.suptitle("Actuator history")
 eat_actuators = [actuator[0] for actuator in actuators]
 avoid_actuators = [actuator[1] for actuator in actuators]
-plt.plot(t_values, eat_actuators, color=GREEN)
-plt.plot(t_values, avoid_actuators, color=BLUE)
+plt.plot(t_values, eat_actuators, color=GREEN, alpha=alpha)
+plt.plot(t_values, avoid_actuators, color=BLUE, alpha=alpha)
+plt.xlabel("Time (in ms)")
+add_fig_legend((GREEN, 'eat actuator'), (BLUE, 'avoid actuator'))
 add_vertical_lines_and_background(max(max(eat_actuators), max(avoid_actuators)) + 2)
 print(f'\n **** Results ****')
 print(f'Fitness: {fitness:.3f}')
 print(f'Accuracy: {accuracy * 100:.1f}%')
-print(f'End of sample accuracy: {end_of_sample_accuracy*100:.1f}%')
+print(f'End of sample accuracy: {end_of_sample_accuracy * 100:.1f}%')
 plt.show()
