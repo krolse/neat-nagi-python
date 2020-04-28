@@ -24,7 +24,9 @@ environment = OneDimensionalEnvironment(50, 5)
  intervals,
  actuators,
  accuracy,
- end_of_sample_accuracy) = environment.simulate_with_visualization(agent)
+ end_of_sample_accuracy,
+ samples,
+ beneficial_food) = environment.simulate_with_visualization(agent)
 
 number_of_neurons = len(membrane_potentials.keys())
 number_of_weights = len(weights.keys())
@@ -61,36 +63,53 @@ def add_fig_legend(*args):
                   loc='upper left')
 
 
+def add_table():
+    the_table = plt.table(cellText=[[sample.name for sample in samples],
+                                    [food.name for food in beneficial_food]],
+                          rowLabels=['Food sample', 'Beneficial food'],
+                          cellLoc='center')
+    the_table.auto_set_font_size(False)
+    the_table.set_fontsize(10)
+
+
 # Membrane potential
 fig = plt.figure()
 fig.suptitle("Neuron membrane potentials")
 for i, key in enumerate(sorted(membrane_potentials.keys())):
     plt.subplot(number_of_neurons, 1, i + 1)
     plt.ylabel(f"{key}")
-    if i == len(membrane_potentials) - 1:
+    if i == 0:
         plt.xlabel("Time (in ms)")
+        plt.gca().xaxis.set_ticks_position('top')
+        plt.gca().xaxis.set_label_position('top')
     else:
         plt.gca().axes.xaxis.set_visible(False)
     plt.plot(t_values, [membrane_potential[0] for membrane_potential in membrane_potentials[key]],
              color=GREEN, linestyle='-', alpha=alpha)
     plt.plot(t_values, [membrane_potential[1] for membrane_potential in membrane_potentials[key]],
              color=BLUE, linestyle='-', alpha=alpha)
+    plt.xlim(0, len(t_values) + NUM_TIME_STEPS - len(t_values) % NUM_TIME_STEPS)
     add_fig_legend((GREEN, 'membrane potential'), (BLUE, 'membrane threshold'))
     add_vertical_lines_and_background(4)
+add_table()
 
 # Weights
 fig = plt.figure()
-plt.title("Weights")
+plt.suptitle("Weights")
 for i, key in enumerate(sorted(weights.keys(), key=lambda x: x[1])):
     plt.subplot(number_of_weights, 1, i + 1)
     plt.ylabel(f"{key}")
-    if i == len(weights) - 1:
+    if i == 0:
         plt.xlabel("Time (in ms)")
+        plt.gca().xaxis.set_ticks_position('top')
+        plt.gca().xaxis.set_label_position('top')
     else:
         plt.gca().axes.xaxis.set_visible(False)
     plt.plot(t_values, weights[key], color=BLUE, linestyle='-')
     add_fig_legend((BLUE, 'weight'))
     add_vertical_lines_and_background(2)
+    plt.xlim(0, len(t_values) + NUM_TIME_STEPS - len(t_values) % NUM_TIME_STEPS)
+add_table()
 
 # Actuator history
 fig = plt.figure()
@@ -100,8 +119,13 @@ avoid_actuators = [actuator[1] for actuator in actuators]
 plt.plot(t_values, eat_actuators, color=GREEN, alpha=alpha)
 plt.plot(t_values, avoid_actuators, color=BLUE, alpha=alpha)
 plt.xlabel("Time (in ms)")
+plt.gca().xaxis.set_ticks_position('top')
+plt.gca().xaxis.set_label_position('top')
 add_fig_legend((GREEN, 'eat actuator'), (BLUE, 'avoid actuator'))
 add_vertical_lines_and_background(max(max(eat_actuators), max(avoid_actuators)) + 2)
+add_table()
+plt.xlim(0, len(t_values) + NUM_TIME_STEPS - len(t_values) % NUM_TIME_STEPS)
+
 print(f'\n **** Results ****')
 print(f'Fitness: {fitness:.3f}')
 print(f'Accuracy: {accuracy * 100:.1f}%')

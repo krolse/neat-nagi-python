@@ -21,7 +21,7 @@ class BeneficialFood(Enum):
     BLACK = {Food.BLACK}
     WHITE = {Food.WHITE}
     BOTH = {Food.BLACK, Food.WHITE}
-    NEITHER = {}
+    NONE = {}
 
 
 class Action(Enum):
@@ -103,7 +103,9 @@ class OneDimensionalEnvironment(object):
         return agent.key, self._fitness(self.maximum_possible_lifetime)
 
     def simulate_with_visualization(self, agent: OneDimensionalAgent) \
-            -> Tuple[int, float, dict, dict, int, List[Tuple[int, int]], List[Tuple[int, int]], float, float]:
+            -> Tuple[
+                int, float, dict, dict, int, List[Tuple[int, int]], List[Tuple[int, int]], float, float, List[Food],
+                List[BeneficialFood]]:
         eat_actuator = []
         avoid_actuator = []
         weights = {key: [] for key, _ in agent.spiking_neural_network.get_weights().items()}
@@ -112,6 +114,8 @@ class OneDimensionalEnvironment(object):
         action_logger = []
         end_of_sample_action_logger = []
         actuator_logger = []
+        sample_logger = []
+        beneficial_food_logger = []
 
         inputs = self._get_initial_input_voltages()
         for i, sample in enumerate(self.food_loadout):
@@ -122,6 +126,8 @@ class OneDimensionalEnvironment(object):
             if i >= FLIP_POINT_1D and i % FLIP_POINT_1D == 0:
                 print(10 * "=")
                 self.mutate()
+            sample_logger.append(sample)
+            beneficial_food_logger.append(self.beneficial_food)
             for time_step in range(i * NUM_TIME_STEPS, (i + 1) * NUM_TIME_STEPS):
                 actuator_logger.append((agent.eat_actuator, agent.avoid_actuator))
                 action_logger.append(self._get_correct_wrong_int(agent, sample))
@@ -139,7 +145,9 @@ class OneDimensionalEnvironment(object):
                             self._get_wrong_action_intervals(action_logger),
                             actuator_logger,
                             sum(action_logger) / len(action_logger),
-                            sum(end_of_sample_action_logger) / len(end_of_sample_action_logger))
+                            sum(end_of_sample_action_logger) / len(end_of_sample_action_logger),
+                            sample_logger,
+                            beneficial_food_logger)
 
                 if time_step > 0:
                     frequencies = self._get_input_frequencies(time_step, sample, eat_actuator, avoid_actuator,
@@ -169,7 +177,9 @@ class OneDimensionalEnvironment(object):
                 self._get_wrong_action_intervals(action_logger),
                 actuator_logger,
                 sum(action_logger) / len(action_logger),
-                sum(end_of_sample_action_logger) / len(end_of_sample_action_logger))
+                sum(end_of_sample_action_logger) / len(end_of_sample_action_logger),
+                sample_logger,
+                beneficial_food_logger)
 
     @staticmethod
     def _initialize_food_loadout():
