@@ -37,4 +37,10 @@ if __name__ == '__main__':
     for generation, fitness in enumerate([fitness.values() for fitness in fitnesses]):
         plt.scatter([generation for _ in range(len(fitness))], fitness, color='b', s=0.1)
     plt.plot(x, average_fitnesses, 'r')
+    try:
+        test_fitnesses = [generation['test_fitness'] for generation in data.values()]
+        plt.plot(x, test_fitnesses, 'g')
+    except KeyError:  # 1D environments don't have test fitnesses
+        pass
+
     plt.show()
