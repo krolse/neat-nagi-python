@@ -4,11 +4,26 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 
-from nagi.constants import RED, BLUE, GREEN
-from nagi.neat import Genome, NeuralNodeGene
+from nagi.constants import RED, BLUE, GREEN, PINK, CYAN
+from nagi.neat import Genome, NeuralNodeGene, NodeGene, InputNodeGene, OutputNodeGene, HiddenNodeGene
 
 
 def visualize_genome(genome: Genome, show_learning_rules: bool = True):
+    def get_color(node: NodeGene):
+        if isinstance(node, InputNodeGene):
+            return GREEN
+        elif isinstance(node, (HiddenNodeGene, OutputNodeGene)):
+            if node.is_inhibitory:
+                if node.bias:
+                    return PINK
+                else:
+                    return RED
+            else:
+                if node.bias:
+                    return CYAN
+                else:
+                    return BLUE
+
     g, nodes, edges = genome_to_graph(genome)
     pos = get_node_coordinates(genome)
 
@@ -17,9 +32,7 @@ def visualize_genome(genome: Genome, show_learning_rules: bool = True):
         for key, node in genome.nodes.items()} if show_learning_rules \
         else {node: f"{node}{'↩' if (node, node) in edges else ''}" for node in nodes}
 
-    node_color = [GREEN if node < genome.input_size else
-                  RED if genome.nodes[node].is_inhibitory else
-                  BLUE for node in nodes]
+    node_color = [get_color(genome.nodes[node]) for node in nodes]
 
     nx.draw_networkx(g, pos=pos, with_labels=True, labels=labels, nodes=nodes, node_color=node_color, node_size=400,
                      font_size=10, connectionstyle="arc3, rad=0.05")

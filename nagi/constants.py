@@ -100,6 +100,8 @@ DAMAGE_PENALTY_FOR_HIDDEN_NEURONS = 1.00
 RED = '#ff7c73'
 BLUE = '#74a0f7'
 GREEN = '#84db81'
+PINK = '#ff99dd'
+CYAN = '#99f1ff'
 
 # Printing colors
 PRINT_GREEN = '\033[92m'
