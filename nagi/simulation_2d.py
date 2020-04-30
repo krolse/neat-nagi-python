@@ -116,7 +116,8 @@ class TwoDimensionalEnvironment(object):
         return agent.key, self._fitness(self.maximum_possible_lifetime)
 
     def simulate_with_visualization(self, agent: TwoDimensionalAgent) -> \
-            Tuple[int, float, dict, dict, int, List[Tuple[int, int]], List[Tuple[int, int]], float, float]:
+            Tuple[int, float, dict, dict, int, List[Tuple[int, int]], List[Tuple[int, int]], float, float,
+                  List[Tuple[int, int]], List[LogicGate]]:
         zero_actuator = []
         one_actuator = []
         weights = {key: [] for key, _ in agent.spiking_neural_network.get_weights().items()}
@@ -125,6 +126,9 @@ class TwoDimensionalEnvironment(object):
         prediction_logger = []
         end_of_sample_prediction_logger = []
         actuator_logger = []
+        sample_logger = []
+        logic_gate_logger = []
+
         inputs = self._get_initial_input_voltages()
         for i, sample in enumerate(self.input_loadout):
             zero_actuator = [t for t in zero_actuator if t >= NUM_TIME_STEPS * (i - 1)]
@@ -134,6 +138,8 @@ class TwoDimensionalEnvironment(object):
             if i >= FLIP_POINT_2D and i % FLIP_POINT_2D == 0:
                 print(10 * "=")
                 self.mutate()
+            sample_logger.append(sample)
+            logic_gate_logger.append(self.current_logic_gate)
             for time_step in range(i * NUM_TIME_STEPS, (i + 1) * NUM_TIME_STEPS):
                 actuator_logger.append((agent.zero_actuator, agent.one_actuator))
                 prediction_logger.append(self._get_correct_wrong_int(agent, sample))
@@ -150,7 +156,9 @@ class TwoDimensionalEnvironment(object):
                             self._get_wrong_prediction_intervals(prediction_logger),
                             actuator_logger,
                             sum(prediction_logger) / len(prediction_logger),
-                            sum(end_of_sample_prediction_logger) / len(end_of_sample_prediction_logger))
+                            sum(end_of_sample_prediction_logger) / len(end_of_sample_prediction_logger),
+                            sample_logger,
+                            logic_gate_logger)
                 if time_step > 0:
                     frequencies = self._get_input_frequencies(time_step, sample, zero_actuator, one_actuator,
                                                               frequencies[4:])
@@ -178,7 +186,9 @@ class TwoDimensionalEnvironment(object):
                 self._get_wrong_prediction_intervals(prediction_logger),
                 actuator_logger,
                 sum(prediction_logger) / len(prediction_logger),
-                sum(end_of_sample_prediction_logger) / len(end_of_sample_prediction_logger))
+                sum(end_of_sample_prediction_logger) / len(end_of_sample_prediction_logger),
+                sample_logger,
+                logic_gate_logger)
 
     @staticmethod
     def _initialize_input_loadout():
