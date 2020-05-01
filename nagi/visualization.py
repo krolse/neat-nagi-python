@@ -53,19 +53,17 @@ def visualize_genome(genome: Genome, show_learning_rules: bool = True):
     nx.draw_networkx(g, pos=pos, with_labels=True, labels=labels, nodes=nodes, node_color=node_color, node_size=400,
                      font_size=10, connectionstyle="arc3, rad=0.05")
 
-    handles = ('input node',
-               'excitatory, without bias',
-               'inhibitory, without bias',
-               'excitatory, with bias',
-               'inhibitory, with bias',
-               'asymmetric hebbian',
-               'asymmetric anti-hebbian',
-               'symmetric hebbian',
-               'symmetric anti-hebbian')
     Legend.update_default_handler_map({Text: CustomTextHandler()})
-    plt.figlegend((*(legend_circle(color) for color in (GREEN, BLUE, RED, CYAN, PINK)),
-                   *(Text(text=text) for text in ('AH', 'AA', 'SH', 'SA'))),
-                  handles, loc='upper left')
+    legend_dict = {legend_circle(GREEN): 'input node',
+                   legend_circle(BLUE): 'excitatory, without bias',
+                   legend_circle(RED): 'inhibitory, without bias',
+                   legend_circle(CYAN): 'excitatory, with bias',
+                   legend_circle(PINK): 'inhibitory, with bias',
+                   Text(text='AH'): 'asymmetric hebbian',
+                   Text(text='AA'): 'asymmetric anti-hebbian',
+                   Text(text='SH'): 'symmetric hebbian',
+                   Text(text='SA'): 'symmetric anti-hebbian'}
+    plt.figlegend(handles=legend_dict.keys(), labels=legend_dict.values(), loc='upper left')
     plt.show()
 
 
