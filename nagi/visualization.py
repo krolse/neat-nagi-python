@@ -64,6 +64,7 @@ def visualize_genome(genome: Genome, show_learning_rules: bool = True):
                    Text(text='SH'): 'symmetric hebbian',
                    Text(text='SA'): 'symmetric anti-hebbian'}
     plt.figlegend(handles=legend_dict.keys(), labels=legend_dict.values(), loc='upper left')
+    plt.box(False)
     plt.show()
 
 
