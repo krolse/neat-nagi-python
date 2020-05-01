@@ -1,11 +1,24 @@
 from copy import deepcopy
 
 import matplotlib.pyplot as plt
+from matplotlib.legend_handler import HandlerBase
+from matplotlib.lines import Line2D
+from matplotlib.text import Text
+from matplotlib.legend import Legend
 import networkx as nx
 import numpy as np
 
 from nagi.constants import RED, BLUE, GREEN, PINK, CYAN
 from nagi.neat import Genome, NeuralNodeGene, NodeGene, InputNodeGene, OutputNodeGene, HiddenNodeGene
+
+
+class CustomTextHandler(HandlerBase):
+    def create_artists(self, legend, orig_handle,
+                       xdescent, ydescent, width, height, fontsize,
+                       trans):
+        tx = Text(width/2, height/2, orig_handle.get_text(), fontsize=fontsize,
+                  ha="center", va="center", fontweight="normal")
+        return [tx]
 
 
 def visualize_genome(genome: Genome, show_learning_rules: bool = True):
@@ -24,6 +37,9 @@ def visualize_genome(genome: Genome, show_learning_rules: bool = True):
                 else:
                     return BLUE
 
+    def legend_circle(color: str):
+        return Line2D([0], [0], color=color, marker='o', linewidth=0)
+
     g, nodes, edges = genome_to_graph(genome)
     pos = get_node_coordinates(genome)
 
@@ -36,6 +52,20 @@ def visualize_genome(genome: Genome, show_learning_rules: bool = True):
 
     nx.draw_networkx(g, pos=pos, with_labels=True, labels=labels, nodes=nodes, node_color=node_color, node_size=400,
                      font_size=10, connectionstyle="arc3, rad=0.05")
+
+    handles = ('input node',
+               'excitatory, without bias',
+               'inhibitory, without bias',
+               'excitatory, with bias',
+               'inhibitory, with bias',
+               'asymmetric hebbian',
+               'asymmetric anti-hebbian',
+               'symmetric hebbian',
+               'symmetric anti-hebbian')
+    Legend.update_default_handler_map({Text: CustomTextHandler()})
+    plt.figlegend((*(legend_circle(color) for color in (GREEN, BLUE, RED, CYAN, PINK)),
+                   *(Text(text=text) for text in ('AH', 'AA', 'SH', 'SA'))),
+                  handles, loc='upper left')
     plt.show()
 
 
