@@ -37,8 +37,8 @@ input_size, output_size = 4, 2
 high_frequency = 50
 low_frequency = 5
 
-population_size = 10
-number_of_generations = 5
+population_size = 200
+number_of_generations = 100
 
 
 if __name__ == '__main__':

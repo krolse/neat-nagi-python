@@ -88,8 +88,8 @@ class TwoDimensionalEnvironment(object):
     def simulate(self, agent: TwoDimensionalAgent) -> Tuple[int, float, float, float]:
         zero_actuator = []
         one_actuator = []
-        prediction_logger = []
-        end_of_sample_prediction_logger = []
+        correct_predictions = 0
+        correct_end_of_sample_predictions = 0
         inputs = self._get_initial_input_voltages()
         for i, sample in enumerate(self.input_loadout):
             zero_actuator = [t for t in zero_actuator if t >= NUM_TIME_STEPS * (i - 1)]
@@ -98,12 +98,12 @@ class TwoDimensionalEnvironment(object):
             if i >= FLIP_POINT_2D and i % FLIP_POINT_2D == 0:
                 self.mutate()
             for time_step in range(i * NUM_TIME_STEPS, (i + 1) * NUM_TIME_STEPS):
-                prediction_logger.append(self._get_correct_wrong_int(agent, sample))
+                correct_predictions += self._get_correct_wrong_int(agent, sample)
                 if agent.health_points <= 0:
                     return (agent.key,
                             self._fitness(time_step),
-                            sum(prediction_logger) / len(prediction_logger),
-                            sum(end_of_sample_prediction_logger) / len(end_of_sample_prediction_logger))
+                            correct_predictions / time_step,
+                            correct_end_of_sample_predictions / i)
                 if time_step > 0:
                     frequencies = self._get_input_frequencies(time_step, sample, zero_actuator, one_actuator,
                                                               frequencies[4:])
@@ -119,11 +119,11 @@ class TwoDimensionalEnvironment(object):
                                                                                                  zero_actuator)
                 agent.one_actuator = TwoDimensionalEnvironment._count_spikes_within_time_window(time_step, one_actuator)
                 self.deal_damage(agent, sample)
-                end_of_sample_prediction_logger.append(self._get_correct_wrong_int(agent, sample))
+                correct_end_of_sample_predictions += self._get_correct_wrong_int(agent, sample)
         return (agent.key,
                 self._fitness(self.maximum_possible_lifetime),
-                sum(prediction_logger) / len(prediction_logger),
-                sum(end_of_sample_prediction_logger) / len(end_of_sample_prediction_logger))
+                correct_predictions / (NUM_TIME_STEPS * INPUT_SAMPLES_PER_SIMULATION),
+                correct_end_of_sample_predictions / INPUT_SAMPLES_PER_SIMULATION)
 
     def simulate_with_visualization(self, agent: TwoDimensionalAgent) -> \
             Tuple[int, float, dict, dict, int, List[Tuple[int, int]], List[Tuple[int, int]], float, float,

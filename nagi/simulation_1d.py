@@ -74,8 +74,8 @@ class OneDimensionalEnvironment(object):
     def simulate(self, agent: OneDimensionalAgent) -> Tuple[int, float, float, float]:
         eat_actuator = []
         avoid_actuator = []
-        action_logger = []
-        end_of_sample_action_logger = []
+        correct_actions = 0
+        correct_end_of_sample_actions = 0
         inputs = self._get_initial_input_voltages()
         for i, sample in enumerate(self.food_loadout):
             eat_actuator = [t for t in eat_actuator if t >= NUM_TIME_STEPS * (i - 1)]
@@ -84,12 +84,12 @@ class OneDimensionalEnvironment(object):
             if i >= FLIP_POINT_1D and i % FLIP_POINT_1D == 0:
                 self.mutate()
             for time_step in range(i * NUM_TIME_STEPS, (i + 1) * NUM_TIME_STEPS):
-                action_logger.append(self._get_correct_wrong_int(agent, sample))
+                correct_actions += self._get_correct_wrong_int(agent, sample)
                 if agent.health_points <= 0:
                     return (agent.key,
                             self._fitness(time_step),
-                            sum(action_logger) / len(action_logger),
-                            sum(end_of_sample_action_logger) / len(end_of_sample_action_logger))
+                            correct_actions / time_step,
+                            correct_end_of_sample_actions / i)
                 if time_step > 0:
                     frequencies = self._get_input_frequencies(time_step, sample, eat_actuator, avoid_actuator,
                                                               frequencies[2:])
@@ -105,12 +105,12 @@ class OneDimensionalEnvironment(object):
                 agent.avoid_actuator = OneDimensionalEnvironment._count_spikes_within_time_window(time_step,
                                                                                                   avoid_actuator)
                 self.deal_damage(agent, sample)
-                end_of_sample_action_logger.append(self._get_correct_wrong_int(agent, sample))
+                correct_end_of_sample_actions += self._get_correct_wrong_int(agent, sample)
 
         return (agent.key,
                 self._fitness(self.maximum_possible_lifetime),
-                sum(action_logger) / len(action_logger),
-                sum(end_of_sample_action_logger) / len(end_of_sample_action_logger))
+                correct_actions / (NUM_TIME_STEPS * FOOD_SAMPLES_PER_SIMULATION),
+                correct_end_of_sample_actions / FOOD_SAMPLES_PER_SIMULATION)
 
     def simulate_with_visualization(self, agent: OneDimensionalAgent) \
             -> Tuple[
