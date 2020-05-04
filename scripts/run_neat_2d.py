@@ -58,10 +58,12 @@ if __name__ == '__main__':
         agents = list([TwoDimensionalAgent.create_agent(genome) for genome in population.genomes.values()])
 
         results = tqdm.tqdm(pool.imap_unordered(env.simulate, agents), total=(len(agents)))
-
         fitnesses = {result[0]: result[1] for result in results}
+        accuracies = {result[0]: result[2] for result in results}
+        end_of_sample_accuracies = {result[0]: result[3] for result in results}
+
         most_fit_genome_key, highest_fitness = max(fitnesses.items(), key=lambda x: x[1])
-        _, test_fitness_of_most_fit_genome = test_env.simulate(
+        _, test_fitness_of_most_fit_genome, _, _ = test_env.simulate(
             TwoDimensionalAgent.create_agent(population.genomes[most_fit_genome_key]))
 
         print(f'Highest fitness: {highest_fitness:.3f}')
@@ -69,6 +71,8 @@ if __name__ == '__main__':
 
         generations[i] = {'population': deepcopy(population),
                           'fitnesses': fitnesses,
+                          'accuracies': accuracies,
+                          'end_of_sample_accuracies': end_of_sample_accuracies,
                           'test_fitness': test_fitness_of_most_fit_genome}
 
         with open(pickle_path, 'wb') as file:

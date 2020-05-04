@@ -71,9 +71,11 @@ class OneDimensionalEnvironment(object):
         agent.health_points -= (correct_partition * DAMAGE_FROM_CORRECT_ACTION +
                                 incorrect_partition * DAMAGE_FROM_INCORRECT_ACTION) ** DAMAGE_PENALTY_FOR_HIDDEN_NEURONS
 
-    def simulate(self, agent: OneDimensionalAgent) -> Tuple[int, float]:
+    def simulate(self, agent: OneDimensionalAgent) -> Tuple[int, float, float, float]:
         eat_actuator = []
         avoid_actuator = []
+        action_logger = []
+        end_of_sample_action_logger = []
         inputs = self._get_initial_input_voltages()
         for i, sample in enumerate(self.food_loadout):
             eat_actuator = [t for t in eat_actuator if t >= NUM_TIME_STEPS * (i - 1)]
@@ -82,8 +84,12 @@ class OneDimensionalEnvironment(object):
             if i >= FLIP_POINT_1D and i % FLIP_POINT_1D == 0:
                 self.mutate()
             for time_step in range(i * NUM_TIME_STEPS, (i + 1) * NUM_TIME_STEPS):
+                action_logger.append(self._get_correct_wrong_int(agent, sample))
                 if agent.health_points <= 0:
-                    return agent.key, self._fitness(time_step)
+                    return (agent.key,
+                            self._fitness(time_step),
+                            sum(action_logger) / len(action_logger),
+                            sum(end_of_sample_action_logger) / len(end_of_sample_action_logger))
                 if time_step > 0:
                     frequencies = self._get_input_frequencies(time_step, sample, eat_actuator, avoid_actuator,
                                                               frequencies[2:])
@@ -99,8 +105,12 @@ class OneDimensionalEnvironment(object):
                 agent.avoid_actuator = OneDimensionalEnvironment._count_spikes_within_time_window(time_step,
                                                                                                   avoid_actuator)
                 self.deal_damage(agent, sample)
+                end_of_sample_action_logger.append(self._get_correct_wrong_int(agent, sample))
 
-        return agent.key, self._fitness(self.maximum_possible_lifetime)
+        return (agent.key,
+                self._fitness(self.maximum_possible_lifetime),
+                sum(action_logger) / len(action_logger),
+                sum(end_of_sample_action_logger) / len(end_of_sample_action_logger))
 
     def simulate_with_visualization(self, agent: OneDimensionalAgent) \
             -> Tuple[

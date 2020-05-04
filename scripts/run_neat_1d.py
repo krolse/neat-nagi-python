@@ -57,9 +57,14 @@ if __name__ == '__main__':
         agents = list([OneDimensionalAgent.create_agent(genome) for genome in population.genomes.values()])
         results = tqdm.tqdm(pool.imap_unordered(env.simulate, agents), total=(len(agents)))
         fitnesses = {result[0]: result[1] for result in results}
+        accuracies = {result[0]: result[2] for result in results}
+        end_of_sample_accuracies = {result[0]: result[3] for result in results}
         highest_fitness = max(fitnesses.values())
         print(f'Highest fitness: {highest_fitness:.3f}')
-        generations[i] = {'population': deepcopy(population), 'fitnesses': fitnesses}
+        generations[i] = {'population': deepcopy(population),
+                          'fitnesses': fitnesses,
+                          'accuracies': accuracies,
+                          'end_of_sample_accuracies': end_of_sample_accuracies}
 
         with open(pickle_path, 'wb') as file:
             pickle.dump(generations, file)
