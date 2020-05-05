@@ -105,7 +105,7 @@ class OneDimensionalEnvironment(object):
                 agent.avoid_actuator = OneDimensionalEnvironment._count_spikes_within_time_window(time_step,
                                                                                                   avoid_actuator)
                 self.deal_damage(agent, sample)
-                correct_end_of_sample_actions += self._get_correct_wrong_int(agent, sample)
+            correct_end_of_sample_actions += self._get_correct_wrong_int(agent, sample)
 
         return (agent.key,
                 self._fitness(self.maximum_possible_lifetime),

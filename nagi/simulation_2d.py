@@ -119,7 +119,8 @@ class TwoDimensionalEnvironment(object):
                                                                                                  zero_actuator)
                 agent.one_actuator = TwoDimensionalEnvironment._count_spikes_within_time_window(time_step, one_actuator)
                 self.deal_damage(agent, sample)
-                correct_end_of_sample_predictions += self._get_correct_wrong_int(agent, sample)
+            correct_end_of_sample_predictions += self._get_correct_wrong_int(agent, sample)
+
         return (agent.key,
                 self._fitness(self.maximum_possible_lifetime),
                 correct_predictions / (NUM_TIME_STEPS * INPUT_SAMPLES_PER_SIMULATION),

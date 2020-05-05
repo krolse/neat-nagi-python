@@ -104,6 +104,8 @@ BLUE = '#74a0f7'
 GREEN = '#84db81'
 PINK = '#ff99dd'
 CYAN = '#99f1ff'
+GOLD = '#bf9c34'
+ORANGE = '#ffd000'
 
 # Printing colors
 PRINT_GREEN = '\033[92m'

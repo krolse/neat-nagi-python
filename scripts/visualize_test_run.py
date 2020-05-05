@@ -3,8 +3,10 @@ from typing import Dict
 
 import matplotlib.pyplot as plt
 from easygui import fileopenbox
+from matplotlib.lines import Line2D
 
 from definitions import ROOT_PATH
+from nagi.constants import RED, BLUE, GREEN, GOLD, ORANGE
 
 
 def get_most_fit_genome(results: Dict[int, Dict]):
@@ -36,11 +38,31 @@ if __name__ == '__main__':
     plt.xlabel('generation')
     for generation, fitness in enumerate([fitness.values() for fitness in fitnesses]):
         plt.scatter([generation for _ in range(len(fitness))], fitness, color='b', s=0.1)
-    plt.plot(x, average_fitnesses, 'r')
+    plt.plot(x, average_fitnesses, RED)
+
     try:
         test_fitnesses = [generation['test_fitness'] for generation in data.values()]
-        plt.plot(x, test_fitnesses, 'g')
+        plt.plot(x, test_fitnesses, GREEN)
     except KeyError:  # 1D environments don't have test fitnesses
         pass
 
+    try:
+        accuracies = [max(generation['accuracies'].values()) for generation in data.values()]
+        end_of_sample_accuracies = [max(generation['end_of_sample_accuracies'].values()) for generation in data.values()]
+        plt.plot(x, accuracies, GOLD)
+        plt.plot(x, end_of_sample_accuracies, ORANGE)
+    except KeyError:  # Older test run data don't contain accuracies
+        pass
+
+    plt.figlegend((Line2D([0], [0], marker='o', color='b', linewidth=0),
+                   Line2D([0], [0], color=RED),
+                   Line2D([0], [0], color=GREEN),
+                   Line2D([0], [0], color=GOLD),
+                   Line2D([0], [0], color=ORANGE)),
+                  ('fitness',
+                   'average fitness',
+                   'max test fitness',
+                   'max accuracy',
+                   'max eos accuracy'),
+                  loc='upper left')
     plt.show()
