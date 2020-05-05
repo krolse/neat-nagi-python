@@ -53,6 +53,8 @@ if __name__ == '__main__':
         plt.plot(x, end_of_sample_accuracies, ORANGE)
     except KeyError:  # Older test run data don't contain accuracies
         pass
+    except ValueError:
+        pass
 
     plt.figlegend((Line2D([0], [0], marker='o', color='b', linewidth=0),
                    Line2D([0], [0], color=RED),

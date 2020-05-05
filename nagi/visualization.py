@@ -49,12 +49,16 @@ def visualize_genome(genome: Genome, show_learning_rules: bool = True):
         else {node: f"{node}{'↩' if (node, node) in edges else ''}" for node in nodes}
 
     node_color = [get_color(genome.nodes[node]) for node in nodes]
-
-    nx.draw_networkx(g, pos=pos, with_labels=True, labels=labels, nodes=nodes, node_color=node_color, node_size=400,
-                     font_size=10, connectionstyle="arc3, rad=0.05")
+    edgecolors = ['k' if isinstance(genome.nodes[node], OutputNodeGene) else get_color(genome.nodes[node]) for node in nodes]
+    nx.draw_networkx_nodes(g, pos=pos, nodes=nodes, node_color=node_color, edgecolors=edgecolors, node_size=400)
+    nx.draw_networkx_labels(g, pos=pos, labels=labels)
+    nx.draw_networkx_edges(g, pos=pos, connectionstyle="arc3, rad=0.05")
+    # nx.draw_networkx(g, pos=pos, with_labels=True, labels=labels, nodes=nodes, node_color=node_color, node_size=400,
+    #                  font_size=10, connectionstyle="arc3, rad=0.05")
 
     Legend.update_default_handler_map({Text: CustomTextHandler()})
     legend_dict = {legend_circle(GREEN): 'input node',
+                   Line2D([0], [0], color='w', markeredgecolor='k', marker='o', linewidth=0): 'output node',
                    legend_circle(BLUE): 'excitatory, without bias',
                    legend_circle(RED): 'inhibitory, without bias',
                    legend_circle(CYAN): 'excitatory, with bias',
@@ -63,7 +67,7 @@ def visualize_genome(genome: Genome, show_learning_rules: bool = True):
                    Text(text='AA'): 'asymmetric anti-hebbian',
                    Text(text='SH'): 'symmetric hebbian',
                    Text(text='SA'): 'symmetric anti-hebbian'}
-    plt.figlegend(handles=legend_dict.keys(), labels=legend_dict.values(), loc='upper left')
+    plt.figlegend(handles=legend_dict.keys(), labels=legend_dict.values(), loc='upper right')
     plt.box(False)
     plt.show()
 
