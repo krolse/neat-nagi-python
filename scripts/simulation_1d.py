@@ -1,12 +1,12 @@
 import pickle
 
 import matplotlib.pyplot as plt
+from easygui import fileopenbox
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
-from easygui import fileopenbox
 
 from definitions import ROOT_PATH
-from nagi.constants import FLIP_POINT_1D, NUM_TIME_STEPS, RED, BLUE, GREEN, TIME_STEP_IN_MSEC
+from nagi.constants import FLIP_POINT_1D, NUM_TIME_STEPS, RED, BLUE, GREEN
 from nagi.simulation_1d import OneDimensionalEnvironment, OneDimensionalAgent
 from nagi.visualization import visualize_genome
 

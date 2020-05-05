@@ -1,6 +1,6 @@
 import multiprocessing as mp
-import os
 import pickle
+import time
 from copy import deepcopy
 
 import tqdm
@@ -11,10 +11,8 @@ from nagi.simulation_1d import OneDimensionalEnvironment, OneDimensionalAgent
 
 
 def get_file_paths():
-    run_number = 1
-    while os.path.exists(f'{ROOT_PATH}/data/test_run_{run_number}.pkl'):
-        run_number += 1
-    return f'{ROOT_PATH}/data/test_run_{run_number}.pkl', f'{ROOT_PATH}/data/test_run_{run_number}_config.txt'
+    timestr = time.strftime("%Y%m%d-%H%M%S")
+    return f'{ROOT_PATH}/data/1D_test_run_{timestr}.pkl', f'{ROOT_PATH}/data/1D_test_run_{timestr}_config.txt'
 
 
 def generate_config_string():
@@ -37,8 +35,8 @@ input_size, output_size = 4, 2
 high_frequency = 50
 low_frequency = 5
 
-population_size = 200
-number_of_generations = 100
+population_size = 10
+number_of_generations = 4
 
 
 if __name__ == '__main__':

@@ -1,9 +1,9 @@
 import pickle
 
 import matplotlib.pyplot as plt
+from easygui import fileopenbox
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
-from easygui import fileopenbox
 
 from definitions import ROOT_PATH
 from nagi.constants import FLIP_POINT_1D, NUM_TIME_STEPS, RED, BLUE, GREEN

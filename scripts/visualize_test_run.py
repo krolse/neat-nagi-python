@@ -1,4 +1,5 @@
 import pickle
+import re
 from typing import Dict
 
 import matplotlib.pyplot as plt
@@ -6,7 +7,7 @@ from easygui import fileopenbox
 from matplotlib.lines import Line2D
 
 from definitions import ROOT_PATH
-from nagi.constants import RED, BLUE, GREEN, GOLD, ORANGE
+from nagi.constants import RED, GREEN, GOLD, ORANGE
 
 
 def get_most_fit_genome(results: Dict[int, Dict]):
@@ -19,13 +20,15 @@ def get_most_fit_genome(results: Dict[int, Dict]):
 
 
 if __name__ == '__main__':
-    path = fileopenbox(default=f"{ROOT_PATH}/data/test_run*.pkl")
+    path = fileopenbox(default=f"{ROOT_PATH}/data/*test_run*.pkl")
     with open(path, 'rb') as file:
         data = pickle.load(file)
 
     genome = get_most_fit_genome(data)
-    run_number = path[path.find('.pkl') - 1]
-    with open(f'{ROOT_PATH}/data/most_fit_genome_test_run_{run_number}.pkl', 'wb') as file:
+
+    run_datetime = re.search(r'[0-9]{8}-[0-9]{6}', path).group()
+
+    with open(f'{ROOT_PATH}/data/most_fit_genome_test_run_{run_datetime}.pkl', 'wb') as file:
         pickle.dump(genome, file)
 
     fitnesses = [generation['fitnesses'] for generation in data.values()]

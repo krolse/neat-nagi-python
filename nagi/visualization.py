@@ -1,12 +1,12 @@
 from copy import deepcopy
 
 import matplotlib.pyplot as plt
+import networkx as nx
+import numpy as np
+from matplotlib.legend import Legend
 from matplotlib.legend_handler import HandlerBase
 from matplotlib.lines import Line2D
 from matplotlib.text import Text
-from matplotlib.legend import Legend
-import networkx as nx
-import numpy as np
 
 from nagi.constants import RED, BLUE, GREEN, PINK, CYAN
 from nagi.neat import Genome, NeuralNodeGene, NodeGene, InputNodeGene, OutputNodeGene, HiddenNodeGene
