@@ -393,6 +393,7 @@ class Population(object):
             old_members = sorted(species.members, key=lambda x: fitnesses[x.key], reverse=True)
 
             for genome in old_members[:max(int(species_size*ELITISM), MIN_SPECIES_SIZE)]:
+                genome.mutate()
                 new_population_of_genomes[genome.key] = genome
                 species_size -= 1
 

@@ -58,9 +58,11 @@ if __name__ == '__main__':
         agents = list([TwoDimensionalAgent.create_agent(genome) for genome in population.genomes.values()])
 
         results = tqdm.tqdm(pool.imap_unordered(env.simulate, agents), total=(len(agents)))
-        fitnesses = {result[0]: result[1] for result in results}
-        accuracies = {result[0]: result[2] for result in results}
-        end_of_sample_accuracies = {result[0]: result[3] for result in results}
+
+        data_dict = {result[0]: result[1:] for result in results}
+        fitnesses = {key: value[0] for key, value in data_dict.items()}
+        accuracies = {key: value[1] for key, value in data_dict.items()}
+        end_of_sample_accuracies = {key: value[2] for key, value in data_dict.items()}
 
         most_fit_genome_key, highest_fitness = max(fitnesses.items(), key=lambda x: x[1])
         _, test_fitness_of_most_fit_genome, _, _ = test_env.simulate(
