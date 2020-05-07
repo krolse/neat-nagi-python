@@ -63,8 +63,9 @@ if __name__ == '__main__':
         end_of_sample_accuracies = {key: value[2] for key, value in data_dict.items()}
 
         most_fit_genome_key, highest_fitness = max(fitnesses.items(), key=lambda x: x[1])
-        _, test_fitness_of_most_fit_genome, _, _ = test_env.simulate(
+        test_result = test_env.simulate(
             TwoDimensionalAgent.create_agent(population.genomes[most_fit_genome_key]))
+        test_fitness_of_most_fit_genome = test_result[1]
 
         print(f'Highest fitness: {highest_fitness:.3f}')
         print(f'Test fitness: {test_fitness_of_most_fit_genome:.3f}')

@@ -15,7 +15,8 @@ from nagi.constants import ENABLE_MUTATE_RATE, ADD_CONNECTION_MUTATE_RATE, ADD_N
     SYMMETRIC_STD_PLUS_INIT_RANGE, ASYMMETRIC_A_INIT_RANGE, ASYMMETRIC_TAU_INIT_RANGE, SYMMETRIC_A_PLUS_MUTATE_SCALE, \
     SYMMETRIC_A_MINUS_MUTATE_SCALE, SYMMETRIC_STD_PLUS_MUTATE_SCALE, ASYMMETRIC_A_MUTATE_SCALE, \
     ASYMMETRIC_TAU_MUTATE_SCALE, SPECIES_PROTECTION_LIMIT, SPECIES_STAGNATION_LIMIT, SYMMETRIC_STD_MINUS_INIT_RANGE, \
-    SYMMETRIC_STD_MINUS_MUTATE_SCALE, BIAS_INIT_PROBABILITIES, BIAS_MUTATE_RATE, EXCITATORY_INIT_PROBABILITIES, ELITISM
+    SYMMETRIC_STD_MINUS_MUTATE_SCALE, BIAS_INIT_PROBABILITIES, BIAS_MUTATE_RATE, EXCITATORY_INIT_PROBABILITIES, ELITISM, \
+    MIN_NUMBER_OF_SPECIES
 
 
 class LearningRule(Enum):
@@ -347,6 +348,8 @@ class Population(object):
                                and not species.is_protected()
                                and species.key not in sorted_species_by_fitness[cutoff:])]
         for species in extinct_species:
+            if len(self.species) <= MIN_NUMBER_OF_SPECIES:
+                break
             for member in species.members:
                 fitnesses.pop(member.key)
             self.species.pop(species.key)

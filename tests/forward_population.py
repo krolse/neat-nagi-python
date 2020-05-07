@@ -3,9 +3,9 @@ import random
 from nagi.neat import Population
 from nagi.visualization import visualize_genome
 
-pop = Population(100, 3, 2)
+pop = Population(200, 4, 2)
 
-for i in range(30):
+for i in range(1):
     print(f'--Generation {i}:')
     for species in pop.species.values():
         print(f'ID: {species.key}, number of individuals: {len(species)}')
