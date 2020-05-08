@@ -65,16 +65,15 @@ if __name__ == '__main__':
         most_fit_genome_key, highest_fitness = max(fitnesses.items(), key=lambda x: x[1])
         test_result = test_env.simulate(
             TwoDimensionalAgent.create_agent(population.genomes[most_fit_genome_key]))
-        test_fitness_of_most_fit_genome = test_result[1]
 
         print(f'Highest fitness: {highest_fitness:.3f}')
-        print(f'Test fitness: {test_fitness_of_most_fit_genome:.3f}')
+        print(f'Test fitness: {test_result[1]:.3f}')
 
         generations[i] = {'population': deepcopy(population),
                           'fitnesses': fitnesses,
                           'accuracies': accuracies,
                           'end_of_sample_accuracies': end_of_sample_accuracies,
-                          'test_fitness': test_fitness_of_most_fit_genome}
+                          'test_result': test_result}
 
         with open(pickle_path, 'wb') as file:
             pickle.dump(generations, file)
