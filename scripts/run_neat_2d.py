@@ -70,7 +70,7 @@ if __name__ == '__main__':
         print(f'Test fitness: {test_result[1]:.3f}')
 
         generations[i] = {'population': deepcopy(population),
-                          'fitnesses': fitnesses,
+                          'fitnesses': deepcopy(fitnesses),
                           'accuracies': accuracies,
                           'end_of_sample_accuracies': end_of_sample_accuracies,
                           'test_result': test_result}

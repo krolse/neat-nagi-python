@@ -35,8 +35,8 @@ input_size, output_size = 4, 2
 high_frequency = 50
 low_frequency = 5
 
-population_size = 10
-number_of_generations = 4
+population_size = 20
+number_of_generations = 10
 
 
 if __name__ == '__main__':
@@ -63,7 +63,7 @@ if __name__ == '__main__':
         highest_fitness = max(fitnesses.values())
         print(f'Highest fitness: {highest_fitness:.3f}')
         generations[i] = {'population': deepcopy(population),
-                          'fitnesses': fitnesses,
+                          'fitnesses': deepcopy(fitnesses),
                           'accuracies': accuracies,
                           'end_of_sample_accuracies': end_of_sample_accuracies}
 
