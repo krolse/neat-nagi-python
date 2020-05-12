@@ -1,6 +1,4 @@
 import pickle
-import re
-from typing import Dict
 
 import matplotlib.pyplot as plt
 from easygui import fileopenbox
@@ -8,15 +6,6 @@ from matplotlib.lines import Line2D
 
 from definitions import ROOT_PATH
 from nagi.constants import ORANGE, GREEN, GOLD
-
-
-def get_most_fit_genome(results: Dict[int, Dict]):
-    most_fit_individuals = {key: max(value['fitnesses'].items(), key=lambda i: i[1]) for key, value in results.items()}
-    most_fit_individual = max([(key, value) for key, value in most_fit_individuals.items()], key=lambda i: i[1][1])
-    generation = most_fit_individual[0]
-    genome_id = most_fit_individual[1][0]
-
-    return results[generation]['population'].genomes[genome_id]
 
 
 def get_handles(with_test: bool):
@@ -35,13 +24,6 @@ if __name__ == '__main__':
     path = fileopenbox(default=f"{ROOT_PATH}/data/*test_run*.pkl")
     with open(path, 'rb') as file:
         data = pickle.load(file)
-
-    genome = get_most_fit_genome(data)
-
-    run_datetime = re.search(r'[0-9]{8}-[0-9]{6}', path).group()
-
-    with open(f'{ROOT_PATH}/data/most_fit_genome_test_run_{run_datetime}.pkl', 'wb') as file:
-        pickle.dump(genome, file)
 
     with_test_data = True if 'test_result' in data[0] else False
 

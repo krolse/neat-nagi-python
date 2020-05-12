@@ -1,8 +1,8 @@
 import math
 import pickle
-import re
 import sys
 from typing import Dict
+from pathlib import Path
 
 from easygui import fileopenbox
 
@@ -47,7 +47,6 @@ if __name__ == '__main__':
     path = fileopenbox(default=f"{ROOT_PATH}/data/*test_run*.pkl")
     with open(path, 'rb') as file:
         data = pickle.load(file)
-    run_datetime = re.search(r'[0-9]{8}-[0-9]{6}', path).group()
     i = int(input("Select measure (Fitness = 1, Accuracy = 2, End of sample accuracy = 3): "))
     try:
         measure = {1: 'fitness', 2: 'accuracy', 3: 'end_of_sample_accuracy'}[i]
@@ -57,6 +56,6 @@ if __name__ == '__main__':
     if n > len(data):
         raise IndexError("Error: n is bigger than population size")
     genome = get_nth_top_genome(n, measure, data)
-    genome_path = f'{ROOT_PATH}/data/test_run_{run_datetime}_{ordinal(n)}_most_{shorthand_measure(measure)}_genome.pkl'
+    genome_path = f'{ROOT_PATH}/data/{Path(path).stem}_{ordinal(n)}_most_{shorthand_measure(measure)}_genome.pkl'
     with open(genome_path, 'wb') as file:
         pickle.dump(genome, file)

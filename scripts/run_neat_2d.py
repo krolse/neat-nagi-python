@@ -35,8 +35,8 @@ input_size, output_size = 6, 2
 high_frequency = 50
 low_frequency = 5
 
-population_size = 10
-number_of_generations = 10
+population_size = 4
+number_of_generations = 4
 
 if __name__ == '__main__':
     pickle_path, txt_path = get_file_paths()
@@ -63,11 +63,27 @@ if __name__ == '__main__':
         end_of_sample_accuracies = {key: value[2] for key, value in data_dict.items()}
 
         most_fit_genome_key, highest_fitness = max(fitnesses.items(), key=lambda x: x[1])
-        test_result = test_env.simulate(
-            TwoDimensionalAgent.create_agent(population.genomes[most_fit_genome_key]))
+        most_acc_genome_key, highest_accuracy = max(accuracies.items(), key=lambda x: x[1])
+        most_eos_acc_genome_key, highest_eos_accuracy = max(accuracies.items(), key=lambda x: x[1])
 
         print(f'Highest fitness: {highest_fitness:.3f}')
-        print(f'Test fitness: {test_result[1]:.3f}')
+        print(f'Highest accuracy: {highest_accuracy * 100:.1f}%')
+        print(f'Highest end-of-sample accuracy: {highest_eos_accuracy * 100:.1f}%')
+
+        print('Running test simulations...')
+        test_agents = [TwoDimensionalAgent.create_agent(population.genomes[key]) for key in
+                       [most_fit_genome_key, most_acc_genome_key, most_eos_acc_genome_key]]
+        test_results = list(pool.imap(test_env.simulate, test_agents))
+        test_fitness = test_results[0][1]
+        test_accuracy = test_results[1][2]
+        test_eos_accuracy = test_results[2][3]
+
+        print(f'Test fitness: {test_fitness:.3f}')
+        print(f'Test accuracy: {test_accuracy * 100:.1f}%')
+        print(f'Test end-of-sample accuracy: {test_eos_accuracy * 100:.1f}%')
+
+        # TODO: Don't actually use the 0th element, works with older test data. Fix to a 3-tuple at a later point.
+        test_result = (0, test_fitness, test_accuracy, test_eos_accuracy)
 
         generations[i] = {'population': deepcopy(population),
                           'fitnesses': deepcopy(fitnesses),
