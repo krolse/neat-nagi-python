@@ -10,23 +10,19 @@ from definitions import ROOT_PATH
 
 
 def get_nth_top_genome(n: int, measure: str, results: Dict[int, Dict]):
+    individuals = [(generation_number, genome_key) for (generation_number, value) in results.items() for genome_key in
+                   value['population'].genomes.keys()]
+
     if measure == 'fitness':
-        top_individuals = {key: max(value['fitnesses'].items(),
-                                    key=lambda i: i[1]) for key, value in results.items()}
+        individuals.sort(key=lambda x: results[x[0]]['fitnesses'][x[1]], reverse=True)
     elif measure == 'accuracy':
-        top_individuals = {key: max(value['accuracies'].items(),
-                                    key=lambda i: i[1]) for key, value in results.items()}
-    elif measure == 'end_of_sample_accuracies':
-        top_individuals = {key: max(value['end_of_sample_accuracies'].items(),
-                                    key=lambda i: i[1]) for key, value in results.items()}
+        individuals.sort(key=lambda x: results[x[0]]['accuracies'][x[1]], reverse=True)
+    elif measure == 'end_of_sample_accuracy':
+        individuals.sort(key=lambda x: (results[x[0]]['end_of_sample_accuracies'][x[1]],
+                                        results[x[0]]['accuracies'][x[1]]), reverse=True)
     else:
         raise Exception("Error: Faulty measure.")
-
-    individual = sorted([(key, value) for key, value in top_individuals.items()],
-                        key=lambda i: i[1][1], reverse=True)[n - 1]
-    generation = individual[0]
-    genome_id = individual[1][0]
-
+    generation, genome_id = individuals[n]
     return results[generation]['population'].genomes[genome_id]
 
 
@@ -52,7 +48,7 @@ if __name__ == '__main__':
         measure = {1: 'fitness', 2: 'accuracy', 3: 'end_of_sample_accuracy'}[i]
     except KeyError("Error: Faulty input (must be 1, 2 or 3)."):
         sys.exit(-1)
-    n = int(input(f"Select which nth best individual to extract (a number between 1 and {len(data)}): "))
+    n = int(input(f"Select which nth best individual to extract: "))
     if n > len(data):
         raise IndexError("Error: n is bigger than population size")
     genome = get_nth_top_genome(n, measure, data)
