@@ -35,8 +35,8 @@ input_size, output_size = 6, 2
 high_frequency = 50
 low_frequency = 5
 
-population_size = 4
-number_of_generations = 4
+population_size = 100
+number_of_generations = 1000
 
 if __name__ == '__main__':
     pickle_path, txt_path = get_file_paths()
