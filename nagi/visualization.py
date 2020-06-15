@@ -21,7 +21,7 @@ class CustomTextHandler(HandlerBase):
         return [tx]
 
 
-def visualize_genome(genome: Genome, show_learning_rules: bool = True):
+def visualize_genome(genome: Genome, show_learning_rules: bool = True, with_legend: bool = True):
     def get_color(node: NodeGene):
         if isinstance(node, InputNodeGene):
             return GREEN
@@ -67,7 +67,8 @@ def visualize_genome(genome: Genome, show_learning_rules: bool = True):
                    Text(text='AA'): 'asymmetric anti-hebbian',
                    Text(text='SH'): 'symmetric hebbian',
                    Text(text='SA'): 'symmetric anti-hebbian'}
-    plt.figlegend(handles=legend_dict.keys(), labels=legend_dict.values(), loc='upper right')
+    if with_legend:
+        plt.figlegend(handles=legend_dict.keys(), labels=legend_dict.values(), loc='upper right')
     plt.box(False)
     plt.show()
 

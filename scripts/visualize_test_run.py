@@ -5,12 +5,14 @@ from easygui import fileopenbox
 from matplotlib.lines import Line2D
 
 from definitions import ROOT_PATH
-from nagi.constants import ORANGE, GREEN, GOLD
+from nagi.constants import YELLOW, GREEN, GOLD
+
+alpha = 0.8
 
 
 def get_handles(with_test: bool):
     handles = (Line2D([0], [0], marker='o', color='b', linewidth=0),
-               Line2D([0], [0], color=ORANGE),
+               Line2D([0], [0], color=YELLOW),
                Line2D([0], [0], color=GREEN))
     return (*handles, Line2D([0], [0], color=GOLD)) if with_test else handles
 
@@ -41,11 +43,11 @@ if __name__ == '__main__':
     plt.xlabel('generation')
     for generation, fitness in enumerate([fitness.values() for fitness in fitnesses]):
         plt.scatter([generation for _ in range(len(fitness))], fitness, color='b', s=0.1)
-    plt.plot(x, average_fitnesses, ORANGE)
-    plt.plot(x, max_fitnesses, GREEN)
+    plt.plot(x, average_fitnesses, YELLOW)
+    plt.plot(x, max_fitnesses, GREEN, alpha=alpha)
     if with_test_data:
         test_fitnesses = [generation['test_result'][1] for generation in data.values()]
-        plt.plot(x, test_fitnesses, GOLD)
+        plt.plot(x, test_fitnesses, GOLD, alpha=alpha)
     plt.figlegend(get_handles(with_test_data), get_labels('fitness', with_test_data), loc='upper left')
     plt.plot()
 
@@ -62,11 +64,11 @@ if __name__ == '__main__':
         plt.xlabel('generation')
         for generation, accuracy in enumerate([accuracy.values() for accuracy in accuracies]):
             plt.scatter([generation for _ in range(len(accuracy))], accuracy, color='b', s=0.1)
-        plt.plot(x, average_accuracies, ORANGE)
-        plt.plot(x, max_accuracies, GREEN)
+        plt.plot(x, average_accuracies, YELLOW)
+        plt.plot(x, max_accuracies, GREEN, alpha=alpha)
         if with_test_data:
             test_accuracies = [generation['test_result'][2] for generation in data.values()]
-            plt.plot(x, test_accuracies, GOLD)
+            plt.plot(x, test_accuracies, GOLD, alpha=alpha)
         plt.figlegend(get_handles(with_test_data), get_labels('accuracy', with_test_data), loc='upper left')
         plt.plot()
 
@@ -84,11 +86,11 @@ if __name__ == '__main__':
         plt.xlabel('generation')
         for generation, accuracy in enumerate([accuracy.values() for accuracy in end_of_sample_accuracies]):
             plt.scatter([generation for _ in range(len(accuracy))], accuracy, color='b', s=0.1)
-        plt.plot(x, average_end_of_sample_accuracies, ORANGE)
-        plt.plot(x, max_end_of_sample_accuracies, GREEN)
+        plt.plot(x, average_end_of_sample_accuracies, YELLOW)
+        plt.plot(x, max_end_of_sample_accuracies, GREEN, alpha=alpha)
         if with_test_data:
             test_end_of_sample_accuracies = [generation['test_result'][3] for generation in data.values()]
-            plt.plot(x, test_end_of_sample_accuracies, GOLD)
+            plt.plot(x, test_end_of_sample_accuracies, GOLD, alpha=alpha)
         plt.figlegend(get_handles(with_test_data), get_labels('eos accuracy', with_test_data), loc='upper left')
         plt.plot()
 

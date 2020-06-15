@@ -4,14 +4,18 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 from nagi.neat import Genome
-from nagi.visualization import get_node_coordinates
+from nagi.visualization import get_node_coordinates, visualize_genome
 
-input_size = 6
+input_size = 3
 output_size = 2
 test_genome = Genome(0, input_size, output_size, count(input_size * output_size + 1), is_initial_genome=True)
 
 number_of_mutations = 20
 n = max([number_of_mutations, 20])
+
+for i in range(10):
+    visualize_genome(test_genome, with_legend=False, show_learning_rules=False)
+    test_genome.mutate()
 
 for i in range(1, n + 1):
     if i > n - 20:
@@ -31,7 +35,7 @@ for i in range(1, n + 1):
                          connectionstyle="arc3, rad=0.1")
     for connection in test_genome.connections.values():
         print((connection.origin_node, connection.destination_node))
-
+    visualize_genome(test_genome)
     test_genome.mutate()
 
 

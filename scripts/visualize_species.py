@@ -21,6 +21,6 @@ labels = [f's{i}' for i in range(num_species)]
 fig = plt.figure()
 plt.title("Species distribution")
 plt.stackplot(x, y)
-plt.legend(labels=labels)
+plt.figlegend(labels=labels, loc='upper left')
 plt.margins(0)
 plt.show()

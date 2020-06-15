@@ -14,7 +14,7 @@ with open(f'{fileopenbox(default=f"{ROOT_PATH}/data/*genome*.pkl")}', 'rb') as f
     test_genome = pickle.load(file)
 
 agent = TwoDimensionalAgent.create_agent(test_genome)
-visualize_genome(test_genome, True)
+visualize_genome(test_genome, show_learning_rules=False, with_legend=False)
 environment = TwoDimensionalEnvironment(50, 5, testing=True)
 (_,
  fitness,
@@ -66,7 +66,7 @@ def add_fig_legend(*args):
 def add_table():
     the_table = plt.table(cellText=[[sample for sample in samples],
                                     [food.name for food in logic_gates]],
-                          rowLabels=['Food sample', 'Beneficial food'],
+                          rowLabels=['Input sample', 'Logic gate'],
                           cellLoc='center')
     the_table.auto_set_font_size(False)
     the_table.set_fontsize(10)
@@ -77,9 +77,10 @@ fig = plt.figure()
 fig.suptitle("Neuron membrane potentials")
 for i, key in enumerate(sorted(membrane_potentials.keys())):
     plt.subplot(number_of_neurons, 1, i + 1)
-    plt.ylabel(f"{key}")
+    h = plt.ylabel(f"({key})    ")
+    h.set_rotation(0)
     if i == 0:
-        plt.xlabel("Time (in ms)")
+        plt.xlabel("Time step")
         plt.gca().xaxis.set_ticks_position('top')
         plt.gca().xaxis.set_label_position('top')
     else:
@@ -98,9 +99,13 @@ fig = plt.figure()
 plt.suptitle("Weights")
 for i, key in enumerate(sorted(weights.keys(), key=lambda x: x[1])):
     plt.subplot(number_of_weights, 1, i + 1)
-    plt.ylabel(f"{key}")
+    h = plt.ylabel(f"{key}       ")
+    h.set_rotation(0)
+    plt.gca().tick_params(axis='y', which='both', length=0, labelsize=0, labelcolor='#00000000')
+    plt.ylim(-0.02, 1.02)
+
     if i == 0:
-        plt.xlabel("Time (in ms)")
+        plt.xlabel("Time step")
         plt.gca().xaxis.set_ticks_position('top')
         plt.gca().xaxis.set_label_position('top')
     else:
@@ -118,7 +123,7 @@ eat_actuators = [actuator[0] for actuator in actuators]
 avoid_actuators = [actuator[1] for actuator in actuators]
 plt.plot(t_values, eat_actuators, color=GREEN, alpha=alpha)
 plt.plot(t_values, avoid_actuators, color=BLUE, alpha=alpha)
-plt.xlabel("Time (in ms)")
+plt.xlabel("Time step")
 plt.gca().xaxis.set_ticks_position('top')
 plt.gca().xaxis.set_label_position('top')
 add_fig_legend((GREEN, 'eat actuator'), (BLUE, 'avoid actuator'))

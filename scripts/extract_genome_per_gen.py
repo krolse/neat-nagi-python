@@ -10,22 +10,17 @@ from definitions import ROOT_PATH
 
 
 def get_nth_top_genome(n: int, measure: str, results: Dict[int, Dict]):
-    individuals = [(generation_number, genome_key)
-                   for (generation_number, value) in results.items()
-                   for genome_key in value['population'].genomes.keys()]
-
+    gen = results[n]
     if measure == 'fitness':
-        individuals.sort(key=lambda x: results[x[0]]['fitnesses'][x[1]], reverse=True)
+        top_individual_id, _ = max(gen['fitnesses'].items(), key=lambda x: x[1])
     elif measure == 'accuracy':
-        individuals.sort(key=lambda x: results[x[0]]['accuracies'][x[1]], reverse=True)
+        top_individual_id, _ = max(gen['accuracies'].items(), key=lambda x: x[1])
     elif measure == 'end_of_sample_accuracy':
-        individuals.sort(key=lambda x: (results[x[0]]['end_of_sample_accuracies'][x[1]],
-                                        results[x[0]]['accuracies'][x[1]]), reverse=True)
+        top_individual_id, _ = max(gen['end_of_sample_accuracies'].items(), key=lambda x: x[1])
     else:
         raise Exception("Error: Faulty measure.")
-    generation, genome_id = individuals[n]
-    print(generation)
-    return results[generation]['population'].genomes[genome_id]
+
+    return results[n]['population'].genomes[top_individual_id]
 
 
 def ordinal(n):
@@ -50,10 +45,10 @@ if __name__ == '__main__':
         measure = {1: 'fitness', 2: 'accuracy', 3: 'end_of_sample_accuracy'}[i]
     except KeyError("Error: Faulty input (must be 1, 2 or 3)."):
         sys.exit(-1)
-    n = int(input(f"Select which nth best individual to extract: "))
+    n = int(input(f"Select generation (a number between 0 and {len(data[0]['population'].genomes)}): "))
     if n > len(data):
         raise IndexError("Error: n is bigger than population size")
     genome = get_nth_top_genome(n, measure, data)
-    genome_path = f'{ROOT_PATH}/data/{Path(path).stem}_{ordinal(n)}_most_{shorthand_measure(measure)}_genome.pkl'
+    genome_path = f'{ROOT_PATH}/data/{Path(path).stem}_gen_{n}_most_{shorthand_measure(measure)}_genome.pkl'
     with open(genome_path, 'wb') as file:
         pickle.dump(genome, file)
